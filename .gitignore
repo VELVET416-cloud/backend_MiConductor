@@ -1,0 +1,22 @@
+# Dependencias
+node_modules/
+
+# Variables de entorno
+.env
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+
+# Carpeta de VS Code (opcional)
+.vscode/
+
+# Archivos temporales
+coverage/
+dist/
