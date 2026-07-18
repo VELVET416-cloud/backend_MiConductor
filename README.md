@@ -55,8 +55,10 @@ cd backend_MiConductor
 Cada vez que alguien descargue el proyecto por primera vez debe ejecutar:
 
 ```bash
-pnpm install
-```
+
+primero instalen el pnpm 
+
+luego ponen este comando pnpm install.
 
 Esto instalará todas las librerías necesarias.
 
@@ -68,15 +70,14 @@ Crear un archivo llamado `.env` en la raíz del proyecto y agregar las variables
 
 Ejemplo:
 
-```env
 PORT=3000
 
-MONGODB_URI=
+CLIENT_URL=http://localhost:5173
 
-JWT_SECRET=
+JWT_SECRET=miconductor123
+
+MONGO_URI=mongodb+srv://mi_conductor:Mi_conductor2026@miconductor.u0fbedm.mongodb.net/?appName=MiConductor
 ```
-
-> Las credenciales reales no deben subirse al repositorio.
 
 ---
 
