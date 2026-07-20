@@ -54,6 +54,58 @@ export const seedPermisos = async () => {
             codigo: "permisos.ver",
             modulo: "Permisos",
             descripcion: "Permite consultar permisos."
+        },
+
+        // Vehículos
+        {
+            nombre: "Crear Vehículo",
+            codigo: "vehiculos.crear",
+            modulo: "Vehículos",
+            descripcion: "Permite crear nuevos vehículos."
+        },
+        {
+            nombre: "Editar Vehículo",
+            codigo: "vehiculos.editar",
+            modulo: "Vehículos",
+            descripcion: "Permite editar vehículos."
+        },
+        {
+            nombre: "Eliminar Vehículo",
+            codigo: "vehiculos.eliminar",
+            modulo: "Vehículos",
+            descripcion: "Permite eliminar vehículos."
+        },
+        {
+            nombre: "Ver Vehículos",
+            codigo: "vehiculos.ver",
+            modulo: "Vehículos",
+            descripcion: "Permite consultar vehículos."
+        },
+
+        // Novedades
+        {
+            nombre: "Crear Novedad",
+            codigo: "novedades.crear",
+            modulo: "Novedades",
+            descripcion: "Permite crear nuevas novedades."
+        },
+        {
+            nombre: "Editar Novedad",
+            codigo: "novedades.editar",
+            modulo: "Novedades",
+            descripcion: "Permite editar novedades."
+        },
+        {
+            nombre: "Eliminar Novedad",
+            codigo: "novedades.eliminar",
+            modulo: "Novedades",
+            descripcion: "Permite eliminar novedades."
+        },
+        {
+            nombre: "Ver Novedades",
+            codigo: "novedades.ver",
+            modulo: "Novedades",
+            descripcion: "Permite consultar novedades."
         }
 
     ];
