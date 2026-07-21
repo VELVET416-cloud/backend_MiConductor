@@ -39,7 +39,6 @@ const vehiculoSchema = new mongoose.Schema(
             type: String,
             required: [true, "El tipo de vehículo es obligatorio"],
             trim: true,
-            enum: ["SEDAN", "SUV", "CAMIONETA", "MOTOCICLETA", "BUS", "CAMION"]
         },
 
         numeroMotor: {
