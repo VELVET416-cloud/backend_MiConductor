@@ -2,7 +2,7 @@ import { Router } from "express";
 
 import permisoController from "./permiso.controller.js";
 
-import { validarSchema } from "./permiso.schema.js";
+import validateSchema from "../../middlewares/validateSchema.js";
 
 import {
     crearPermisoSchema,
@@ -17,13 +17,13 @@ router.get("/:id", permisoController.obtenerPorId);
 
 router.post(
     "/",
-    validarSchema(crearPermisoSchema),
+    validateSchema(crearPermisoSchema),
     permisoController.crear
 );
 
 router.put(
     "/:id",
-    validarSchema(actualizarPermisoSchema),
+    validateSchema(actualizarPermisoSchema),
     permisoController.actualizar
 );
 
