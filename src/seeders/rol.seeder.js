@@ -4,36 +4,66 @@ import Permiso from "../modules/permiso/permiso.model.js";
 export const seedRoles = async () => {
 
     // Obtener todos los permisos existentes
-    const permisos = await Permiso.find({}, "_id");
+    const todosLosPermisos = await Permiso.find({}, "_id");
 
-    // Buscar el rol ADMINISTRADOR
-    let administrador = await Rol.findOne({
-        nombre: "ADMINISTRADOR"
-    });
+    const roles = [
 
-    // Si no existe, crearlo
-    if (!administrador) {
-
-        administrador = await Rol.create({
+        {
             nombre: "ADMINISTRADOR",
-            descripcion: "Administrador general del sistema",
-            permisos: permisos.map((permiso) => permiso._id),
+            descripcion: "Administrador general del sistema.",
+            permisos: todosLosPermisos.map(
+                permiso => permiso._id
+            ),
             esSistema: true
+        },
+
+        {
+            nombre: "CONDUCTOR",
+            descripcion: "Conductor del sistema.",
+            permisos: [],
+            esSistema: true
+        },
+
+        {
+            nombre: "CLIENTE",
+            descripcion: "Cliente del sistema.",
+            permisos: [],
+            esSistema: true
+        }
+
+    ];
+
+    for (const datosRol of roles) {
+
+        let rol = await Rol.findOne({
+            nombre: datosRol.nombre
         });
 
-        console.log("✅ Rol ADMINISTRADOR creado correctamente.");
+        if (!rol) {
 
-    } else {
+            await Rol.create({
+                ...datosRol,
+                activo: true
+            });
 
-        // Actualizar permisos
-        administrador.permisos = permisos.map((permiso) => permiso._id);
+            console.log(
+                `✅ Rol ${datosRol.nombre} creado.`
+            );
 
-        // Marcar como rol del sistema
-        administrador.esSistema = true;
+        } else {
 
-        await administrador.save();
+            rol.descripcion = datosRol.descripcion;
+            rol.permisos = datosRol.permisos;
+            rol.esSistema = true;
+            rol.activo = true;
 
-        console.log("✅ Rol ADMINISTRADOR actualizado correctamente.");
+            await rol.save();
+
+            console.log(
+                `♻ Rol ${datosRol.nombre} actualizado.`
+            );
+
+        }
 
     }
 

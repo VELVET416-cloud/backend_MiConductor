@@ -2,61 +2,47 @@ import Permiso from "../modules/permiso/permiso.model.js";
 
 export const seedPermisos = async () => {
 
-    const permisos = [
+    const acciones = [
+        "crear",
+        "ver",
+        "editar",
+        "eliminar"
+    ];
 
-        // Roles
-        {
-            nombre: "Crear Rol",
-            codigo: "roles.crear",
-            modulo: "Roles",
-            descripcion: "Permite crear nuevos roles."
-        },
-        {
-            nombre: "Editar Rol",
-            codigo: "roles.editar",
-            modulo: "Roles",
-            descripcion: "Permite editar roles."
-        },
-        {
-            nombre: "Eliminar Rol",
-            codigo: "roles.eliminar",
-            modulo: "Roles",
-            descripcion: "Permite eliminar roles."
-        },
-        {
-            nombre: "Ver Roles",
-            codigo: "roles.ver",
-            modulo: "Roles",
-            descripcion: "Permite consultar roles."
-        },
+    const modulos = [
+        "roles",
+        "permisos",
+        "usuarios",
+        "conductores"
+    ];
 
-        // Permisos
-        {
-            nombre: "Crear Permiso",
-            codigo: "permisos.crear",
-            modulo: "Permisos",
-            descripcion: "Permite crear permisos."
-        },
-        {
-            nombre: "Editar Permiso",
-            codigo: "permisos.editar",
-            modulo: "Permisos",
-            descripcion: "Permite editar permisos."
-        },
-        {
-            nombre: "Eliminar Permiso",
-            codigo: "permisos.eliminar",
-            modulo: "Permisos",
-            descripcion: "Permite eliminar permisos."
-        },
-        {
-            nombre: "Ver Permisos",
-            codigo: "permisos.ver",
-            modulo: "Permisos",
-            descripcion: "Permite consultar permisos."
+    const permisos = [];
+
+    for (const modulo of modulos) {
+
+        const nombreModulo =
+            modulo.charAt(0).toUpperCase() + modulo.slice(1);
+
+        for (const accion of acciones) {
+
+            const nombreAccion =
+                accion.charAt(0).toUpperCase() + accion.slice(1);
+
+            permisos.push({
+
+                nombre: `${nombreAccion} ${nombreModulo}`,
+
+                codigo: `${modulo}.${accion}`,
+
+                modulo: nombreModulo,
+
+                descripcion: `Permite ${accion} ${modulo}.`
+
+            });
+
         }
 
-    ];
+    }
 
     for (const permiso of permisos) {
 
@@ -69,6 +55,10 @@ export const seedPermisos = async () => {
             await Permiso.create(permiso);
 
             console.log(`✅ Permiso ${permiso.codigo} creado.`);
+
+        } else {
+
+            console.log(`✔ Permiso ${permiso.codigo} ya existe.`);
 
         }
 

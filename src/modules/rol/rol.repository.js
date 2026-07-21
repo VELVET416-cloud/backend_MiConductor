@@ -7,15 +7,23 @@ class RolRepository {
     }
 
     async obtenerTodos() {
-        return await Rol.find()
+        return await Rol.find({
+            activo: true
+        })
             .populate(
                 "permisos",
                 "nombre codigo modulo descripcion"
-            );
+            )
+            .sort({
+                createdAt: -1
+            });
     }
 
     async obtenerPorId(id) {
-        return await Rol.findById(id)
+        return await Rol.findOne({
+            _id: id,
+            activo: true
+        })
             .populate(
                 "permisos",
                 "nombre codigo modulo descripcion"
@@ -23,12 +31,18 @@ class RolRepository {
     }
 
     async obtenerPorNombre(nombre) {
-        return await Rol.findOne({ nombre });
+        return await Rol.findOne({
+            nombre,
+            activo: true
+        });
     }
 
     async actualizar(id, datos) {
-        return await Rol.findByIdAndUpdate(
-            id,
+        return await Rol.findOneAndUpdate(
+            {
+                _id: id,
+                activo: true
+            },
             datos,
             {
                 new: true,
@@ -41,7 +55,15 @@ class RolRepository {
     }
 
     async eliminar(id) {
-        return await Rol.findByIdAndDelete(id);
+        return await Rol.findByIdAndUpdate(
+            id,
+            {
+                activo: false
+            },
+            {
+                new: true
+            }
+        );
     }
 
 }

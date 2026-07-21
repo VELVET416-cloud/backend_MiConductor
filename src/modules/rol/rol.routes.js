@@ -2,7 +2,7 @@ import { Router } from "express";
 
 import rolController from "./rol.controller.js";
 
-import { validarSchema } from "./rol.schema.js";
+import validateSchema from "../../middlewares/validateSchema.js";
 
 import {
     crearRolSchema,
@@ -17,13 +17,13 @@ router.get("/:id", rolController.obtenerPorId);
 
 router.post(
     "/",
-    validarSchema(crearRolSchema),
+    validateSchema(crearRolSchema),
     rolController.crear
 );
 
 router.put(
     "/:id",
-    validarSchema(actualizarRolSchema),
+    validateSchema(actualizarRolSchema),
     rolController.actualizar
 );
 
