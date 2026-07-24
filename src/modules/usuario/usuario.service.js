@@ -68,7 +68,13 @@ class UsuarioService {
             salt
         );
 
-        return await UsuarioRepository.crear(datos);
+        // Crear usuario
+        const nuevoUsuario = await UsuarioRepository.crear(datos);
+
+        // Retornar usuario sin contraseña
+        return await UsuarioRepository.obtenerPorId(
+            nuevoUsuario._id
+        );
     }
 
     // Obtener todos
