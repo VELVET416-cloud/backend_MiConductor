@@ -5,14 +5,16 @@ const errorMiddleware = (error, req, res, next) => {
 
     console.error(error);
 
-    // Errores de validación de Zod
     if (error instanceof ZodError) {
 
-        return errorResponse(
-            res,
-            error.errors[0].message,
-            400
-        );
+        return res.status(400).json({
+            success: false,
+            message: "Error de validación.",
+            errors: error.issues.map(issue => ({
+                campo: issue.path.join("."),
+                mensaje: issue.message
+            }))
+        });
 
     }
 

@@ -1,33 +1,69 @@
 import Rol from "../modules/rol/rol.model.js";
 import Permiso from "../modules/permiso/permiso.model.js";
+import {
+    ROLES,
+    ACCIONES,
+    MODULOS
+} from "../constants/permiso.js";
 
 export const seedRoles = async () => {
 
-    // Obtener todos los permisos existentes
-    const todosLosPermisos = await Permiso.find({}, "_id");
+    // Obtener todos los permisos
+    const todosLosPermisos = await Permiso.find();
+
+    // Función para obtener los IDs de permisos por código
+    const obtenerPermisos = (...codigos) => {
+
+        return todosLosPermisos
+            .filter(permiso =>
+                codigos.includes(permiso.codigo)
+            )
+            .map(permiso => permiso._id);
+
+    };
 
     const roles = [
 
         {
-            nombre: "ADMINISTRADOR",
+            nombre: ROLES.ADMIN,
             descripcion: "Administrador general del sistema.",
+
+            // El administrador siempre tiene TODOS
             permisos: todosLosPermisos.map(
                 permiso => permiso._id
             ),
+
             esSistema: true
         },
 
         {
-            nombre: "CONDUCTOR",
+            nombre: ROLES.CONDUCTOR,
             descripcion: "Conductor del sistema.",
-            permisos: [],
+
+            permisos: obtenerPermisos(
+
+                `${ACCIONES.VER}.${MODULOS.CONDUCTORES}`,
+                `${ACCIONES.EDITAR}.${MODULOS.CONDUCTORES}`
+
+            ),
+
             esSistema: true
         },
 
         {
-            nombre: "CLIENTE",
+            nombre: ROLES.CLIENTE,
             descripcion: "Cliente del sistema.",
-            permisos: [],
+
+            permisos: [
+
+                // Agrega aquí los permisos del cliente
+                // Ejemplo:
+                // ...obtenerPermisos(
+                //     `${ACCIONES.VER}.${MODULOS.CONDUCTORES}`
+                // )
+
+            ],
+
             esSistema: true
         }
 

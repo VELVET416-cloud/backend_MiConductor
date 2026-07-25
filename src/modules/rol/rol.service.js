@@ -25,13 +25,10 @@ class RolService {
         }
 
         // Validar permisos
-        if (
-            Array.isArray(datos.permisos) &&
-            datos.permisos.length > 0
-        ) {
+        if (Array.isArray(datos.permisos)) {
 
             const permisos = await Permiso.find({
-                codigo: {
+                _id: {
                     $in: datos.permisos
                 },
                 activo: true
@@ -39,13 +36,13 @@ class RolService {
 
             if (permisos.length !== datos.permisos.length) {
                 throw new AppError(
-                    "Uno o varios permisos no existen.",
+                    "Uno o más permisos no existen.",
                     400
                 );
             }
 
             datos.permisos = permisos.map(
-                (permiso) => permiso._id
+                permiso => permiso._id
             );
 
         }
@@ -103,15 +100,16 @@ class RolService {
         // No permitir cambiar el nombre de un rol del sistema
         if (rol.esSistema && datos.nombre) {
 
-            const nuevoNombre = datos.nombre
-                .trim()
-                .toUpperCase();
+            const nuevoNombre =
+                datos.nombre.trim().toUpperCase();
 
             if (nuevoNombre !== rol.nombre) {
+
                 throw new AppError(
                     "No se puede cambiar el nombre de un rol del sistema.",
                     403
                 );
+
             }
 
         }
@@ -131,10 +129,12 @@ class RolService {
                     );
 
                 if (existe) {
+
                     throw new AppError(
                         "Ya existe un rol con ese nombre.",
                         409
                     );
+
                 }
 
             }
@@ -143,31 +143,31 @@ class RolService {
 
         // Normalizar descripción
         if (datos.descripcion) {
-            datos.descripcion = datos.descripcion.trim();
+            datos.descripcion =
+                datos.descripcion.trim();
         }
 
         // Validar permisos
-        if (
-            Array.isArray(datos.permisos) &&
-            datos.permisos.length > 0
-        ) {
+        if (Array.isArray(datos.permisos)) {
 
             const permisos = await Permiso.find({
-                codigo: {
+                _id: {
                     $in: datos.permisos
                 },
                 activo: true
             });
 
             if (permisos.length !== datos.permisos.length) {
+
                 throw new AppError(
-                    "Uno o varios permisos no existen.",
+                    "Uno o más permisos no existen.",
                     400
                 );
+
             }
 
             datos.permisos = permisos.map(
-                (permiso) => permiso._id
+                permiso => permiso._id
             );
 
         }
@@ -182,31 +182,35 @@ class RolService {
     async eliminar(id) {
 
         if (!mongoose.Types.ObjectId.isValid(id)) {
+
             throw new AppError(
                 "ID de rol inválido.",
                 400
             );
+
         }
 
         const rol = await rolRepository.obtenerPorId(id);
 
         if (!rol) {
+
             throw new AppError(
                 "Rol no encontrado.",
                 404
             );
+
         }
 
         if (rol.esSistema) {
+
             throw new AppError(
                 `El rol "${rol.nombre}" pertenece al sistema y no puede eliminarse.`,
                 403
             );
+
         }
 
         await rolRepository.eliminar(id);
-
-        return;
 
     }
 
