@@ -1,6 +1,13 @@
 import { z } from "zod";
 
-export const crearPermisoSchema = z.object({
+const roles = [
+    "ADMINISTRADOR",
+    "CONDUCTOR",
+    "CLIENTE"
+];
+
+const permisoSchema = z.object({
+
     nombre: z
         .string({
             required_error: "El nombre es obligatorio."
@@ -15,14 +22,15 @@ export const crearPermisoSchema = z.object({
         .min(3, "El código es obligatorio.")
         .regex(
             /^[a-z]+\.[a-z]+$/,
-            "El código debe tener el formato modulo.accion (ej: usuarios.crear)"
+            "El código debe tener el formato accion.modulo (ej: crear.usuarios)."
         ),
 
     modulo: z
         .string({
             required_error: "El módulo es obligatorio."
         })
-        .min(3, "El módulo es obligatorio."),
+        .min(3, "El módulo es obligatorio.")
+        .max(100, "El módulo no puede superar los 100 caracteres."),
 
     descripcion: z
         .string({
@@ -31,7 +39,16 @@ export const crearPermisoSchema = z.object({
         .min(5, "La descripción debe tener mínimo 5 caracteres.")
         .max(250, "La descripción no puede superar los 250 caracteres."),
 
+    rolesPermitidos: z
+        .array(
+            z.enum(roles)
+        )
+        .min(1, "Debe asignar al menos un rol."),
+
     activo: z.boolean().optional()
+
 });
 
-export const actualizarPermisoSchema = crearPermisoSchema.partial();
+export const crearPermisoSchema = permisoSchema;
+
+export const actualizarPermisoSchema = permisoSchema.partial();

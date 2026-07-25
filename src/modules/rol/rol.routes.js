@@ -11,22 +11,46 @@ import {
 
 const router = Router();
 
-router.get("/", rolController.obtenerTodos);
-
-router.get("/:id", rolController.obtenerPorId);
-
+// =========================
+// Crear rol
+// =========================
 router.post(
     "/",
     validateSchema(crearRolSchema),
     rolController.crear
 );
 
+// =========================
+// Obtener todos los roles
+// =========================
+router.get(
+    "/",
+    rolController.obtenerTodos
+);
+
+// =========================
+// Obtener rol por ID
+// =========================
+router.get(
+    "/:id",
+    rolController.obtenerPorId
+);
+
+// =========================
+// Actualizar rol
+// =========================
 router.put(
     "/:id",
     validateSchema(actualizarRolSchema),
     rolController.actualizar
 );
 
-router.delete("/:id", rolController.eliminar);
+// =========================
+// Eliminar rol
+// =========================
+router.delete(
+    "/:id",
+    rolController.eliminar
+);
 
 export default router;
