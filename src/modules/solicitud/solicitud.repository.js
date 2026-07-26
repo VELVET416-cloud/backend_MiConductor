@@ -90,6 +90,36 @@ class SolicitudRepository {
         ).populate(populateSolicitud);
     }
 
+    async cancelar(id) {
+        return await Solicitud.findOneAndUpdate(
+            {
+                _id: id
+            },
+            {
+                estado: "CANCELADO"
+            },
+            {
+                new: true,
+                runValidators: true
+            }
+        ).populate(populateSolicitud);
+    }
+
+    async completar(id) {
+        return await Solicitud.findOneAndUpdate(
+            {
+                _id: id
+            },
+            {
+                estado: "COMPLETADO"
+            },
+            {
+                new: true,
+                runValidators: true
+            }
+        ).populate(populateSolicitud);
+    }
+
 }
 
 export default new SolicitudRepository();

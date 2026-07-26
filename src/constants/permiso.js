@@ -15,5 +15,6 @@ export const MODULOS = {
     ROLES: "roles",
     PERMISOS: "permisos",
     USUARIOS: "usuarios",
-    CONDUCTORES: "conductores"
+    CONDUCTORES: "conductores",
+    NOVEDADES: "novedades"
 };
