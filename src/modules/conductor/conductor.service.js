@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 import ConductorRepository from "./conductor.repository.js";
 import UsuarioRepository from "../usuario/usuario.repository.js";
 import UsuarioHelper from "../usuario/usuario.helper.js";
-import RolRepository from "../rol/rol.repository.js";
+
 
 import AppError from "../../utils/AppError.js";
 
@@ -12,47 +12,30 @@ class ConductorService {
     // ======================================================
     // CREAR CONDUCTOR
     // ======================================================
-
+    
     async crear(datos) {
 
         // Buscar el rol CONDUCTOR
 
-        const rolConductor =
-            await RolRepository.obtenerPorNombre(
-                "CONDUCTOR"
-            );
-
-        if (!rolConductor) {
-
-            throw new AppError(
-                "No existe el rol CONDUCTOR.",
-                404
-            );
-
-        }
+        
 
         // Crear usuario
 
-        const usuario =
-            await UsuarioHelper.crear({
+        // Crear usuario
 
-                nombre: datos.nombre,
-
-                apellido: datos.apellido,
-
-                tipoDocumento: datos.tipoDocumento,
-
-                documento: datos.documento,
-
-                correo: datos.correo,
-
-                password: datos.password,
-
-                telefono: datos.telefono,
-
-                rol: rolConductor._id
-
-            });
+const usuario =
+    await UsuarioHelper.crear(
+        {
+            nombre: datos.nombre,
+            apellido: datos.apellido,
+            tipoDocumento: datos.tipoDocumento,
+            documento: datos.documento,
+            correo: datos.correo,
+            password: datos.password,
+            telefono: datos.telefono
+        },
+        "CONDUCTOR"
+    );
 
         try {
 
