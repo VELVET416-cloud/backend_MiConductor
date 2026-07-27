@@ -3,6 +3,7 @@ import { Router } from "express";
 import rolController from "./rol.controller.js";
 
 import validateSchema from "../../middlewares/validateSchema.js";
+import authMiddleware from "../../middlewares/auth.middleware.js";
 
 import {
     crearRolSchema,
@@ -25,6 +26,7 @@ router.post(
 // =========================
 router.get(
     "/",
+    authMiddleware,
     rolController.obtenerTodos
 );
 

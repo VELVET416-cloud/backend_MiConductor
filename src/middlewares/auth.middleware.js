@@ -1,42 +1,47 @@
 import jwt from "jsonwebtoken";
 
 import { env } from "../config/env.js";
+import AppError from "../utils/AppError.js";
 
-const authMiddleware = (req,res,next)=>{
+const authMiddleware = (req, res, next) => {
 
-    const token=req.headers.authorization?.split(" ")[1];
+    try {
 
-    if(!token){
+        const authHeader = req.headers.authorization;
 
-        return res.status(401).json({
+        if (!authHeader || !authHeader.startsWith("Bearer ")) {
+            throw new AppError(
+                "Token requerido.",
+                401
+            );
+        }
 
-            success:false,
+        const token = authHeader.split(" ")[1];
 
-            message:"Token requerido"
+        const decoded = jwt.verify(
+            token,
+            env.JWT_SECRET
+        );
 
-        });
-
-    }
-
-    try{
-
-        const decoded=jwt.verify(token,env.JWT_SECRET);
-
-        req.user=decoded;
+        req.usuario = decoded;
 
         next();
 
-    }
+    } catch (error) {
 
-    catch(error){
+        if (
+            error.name === "JsonWebTokenError" ||
+            error.name === "TokenExpiredError"
+        ) {
+            return next(
+                new AppError(
+                    "Token inválido o expirado.",
+                    401
+                )
+            );
+        }
 
-        return res.status(401).json({
-
-            success:false,
-
-            message:"Token inválido"
-
-        });
+        next(error);
 
     }
 
