@@ -11,8 +11,10 @@ class AuthRepository {
             .select("+password")
             .populate({
                 path: "rol",
+                select: "nombre permisos",
                 populate: {
-                    path: "permisos"
+                    path: "permisos",
+                    select: "codigo"
                 }
             });
 

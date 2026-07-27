@@ -36,17 +36,25 @@ class AuthService {
             );
         }
 
+        console.log(
+    JSON.stringify(usuario, null, 2)
+);
+
         // Generar JWT
         const token = jwt.sign(
             {
                 id: usuario._id,
-                rol: usuario.rol.nombre
+                correo: usuario.correo,
+                rol: usuario.rol.nombre,
+                permisos: usuario.rol.permisos.map(
+                    permiso => permiso.codigo
+                )
             },
             env.JWT_SECRET,
-            {
-                expiresIn: env.JWT_EXPIRES_IN
-            }
-        );
+    {
+        expiresIn: "8h"
+    }
+);
 
         // Quitar contraseña
         usuario.password = undefined;
