@@ -46,6 +46,16 @@ export const seedPermisos = async () => {
                 ACCIONES.EDITAR,
                 ACCIONES.ELIMINAR
             ]
+        },
+
+        {
+            nombre: MODULOS.NOVEDADES,
+            acciones: [
+                ACCIONES.CREAR,
+                ACCIONES.VER,
+                ACCIONES.EDITAR,
+                ACCIONES.ELIMINAR
+            ]
         }
 
     ];

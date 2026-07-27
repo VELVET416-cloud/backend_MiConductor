@@ -420,6 +420,89 @@ class SolicitudService {
 
     }
 
+    // ======================================================
+    // CANCELAR SOLICITUD
+    // ======================================================
+
+    async cancelar(id) {
+
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+
+            throw new AppError(
+                "El id de la solicitud no es válido.",
+                400
+            );
+
+        }
+
+        const solicitud =
+            await SolicitudRepository.obtenerPorId(id);
+
+        if (!solicitud) {
+
+            throw new AppError(
+                "Solicitud no encontrada.",
+                404
+            );
+
+        }
+
+        if (
+            solicitud.estado === "COMPLETADO" ||
+            solicitud.estado === "CANCELADO"
+        ) {
+
+            throw new AppError(
+                "La solicitud ya no puede modificarse.",
+                400
+            );
+
+        }
+
+        return await SolicitudRepository.cancelar(id);
+
+    }
+
+    // ======================================================
+    // COMPLETAR SOLICITUD
+    // ======================================================
+
+    async completar(id) {
+
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+
+            throw new AppError(
+                "El id de la solicitud no es válido.",
+                400
+            );
+
+        }
+
+        const solicitud =
+            await SolicitudRepository.obtenerPorId(id);
+
+        if (!solicitud) {
+
+            throw new AppError(
+                "Solicitud no encontrada.",
+                404
+            );
+
+        }
+
+        if (solicitud.estado !== "EN_PROCESO") {
+
+            throw new AppError(
+                "La solicitud no puede completarse desde ese estado.",
+                400
+            );
+
+        }
+
+        return await SolicitudRepository.completar(id);
+
+    }
+
 }
 
 export default new SolicitudService();

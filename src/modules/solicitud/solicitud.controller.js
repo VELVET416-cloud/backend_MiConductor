@@ -122,6 +122,50 @@ class SolicitudController {
         }
     }
 
+    // ======================================================
+    // CANCELAR SOLICITUD
+    // ======================================================
+
+    async cancelar(req, res, next) {
+        try {
+
+            const { id } = req.params;
+
+            const solicitud = await SolicitudService.cancelar(id);
+
+            return successResponse(
+                res,
+                solicitud,
+                "Solicitud cancelada correctamente."
+            );
+
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    // ======================================================
+    // COMPLETAR SOLICITUD
+    // ======================================================
+
+    async completar(req, res, next) {
+        try {
+
+            const { id } = req.params;
+
+            const solicitud = await SolicitudService.completar(id);
+
+            return successResponse(
+                res,
+                solicitud,
+                "Solicitud completada correctamente."
+            );
+
+        } catch (error) {
+            next(error);
+        }
+    }
+
 }
 
 export default new SolicitudController();
