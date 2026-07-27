@@ -7,6 +7,7 @@ import clienteRoutes from "../../modules/cliente/cliente.routes.js";
 import vehiculoRoutes from "../../modules/vehiculo/vehiculo.routes.js";
 import conductorRoutes from "../../modules/conductor/conductor.routes.js";
 import solicitudRoutes from "../../modules/solicitud/solicitud.routes.js";
+import novedadRoutes from "../../modules/novedad/novedad.routes.js";
 
 const router = Router();
 
@@ -24,5 +25,6 @@ router.use("/clientes", clienteRoutes);
 router.use("/vehiculos", vehiculoRoutes);
 router.use("/conductores", conductorRoutes);
 router.use("/solicitudes", solicitudRoutes);
+router.use("/novedades", novedadRoutes);
 
 export default router;
