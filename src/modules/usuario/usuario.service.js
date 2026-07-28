@@ -249,4 +249,4 @@ class UsuarioService {
 
 }
 
-export default new UsuarioService();
+export default new UsuarioService();z
