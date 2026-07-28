@@ -49,8 +49,8 @@ import { seedPermisos } from "./seeders/permiso.seeder.js";
 
 const startServer = async () => {
   await connectDB();
-  await seedRoles();
-  await seedPermisos()
+  await seedPermisos();
+  await seedRoles()
 
   const server = http.createServer(app);
 

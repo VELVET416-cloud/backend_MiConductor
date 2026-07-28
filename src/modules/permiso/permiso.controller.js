@@ -1,69 +1,61 @@
 import permisoService from "./permiso.service.js";
 
+import { successResponse } from "../../responses/success.response.js";
+
 class PermisoController {
 
-    async crear(req, res) {
+    async crear(req, res, next) {
         try {
 
             const permiso = await permisoService.crear(req.body);
 
-            return res.status(201).json({
-                success: true,
-                message: "Permiso creado correctamente.",
-                data: permiso
-            });
+            return successResponse(
+                res,
+                permiso,
+                "Permiso creado correctamente.",
+                201
+            );
 
         } catch (error) {
-
-            return res.status(400).json({
-                success: false,
-                message: error.message
-            });
-
+            next(error);
         }
     }
 
-    async obtenerTodos(req, res) {
+    async obtenerTodos(req, res, next) {
         try {
 
             const permisos = await permisoService.obtenerTodos();
 
-            return res.status(200).json({
-                success: true,
-                data: permisos
-            });
+            return successResponse(
+                res,
+                permisos,
+                "Permisos obtenidos correctamente."
+            );
 
         } catch (error) {
-
-            return res.status(500).json({
-                success: false,
-                message: error.message
-            });
-
+            next(error);
         }
     }
 
-    async obtenerPorId(req, res) {
+    async obtenerPorId(req, res, next) {
         try {
 
-            const permiso = await permisoService.obtenerPorId(req.params.id);
+            const permiso = await permisoService.obtenerPorId(
+                req.params.id
+            );
 
-            return res.status(200).json({
-                success: true,
-                data: permiso
-            });
+            return successResponse(
+                res,
+                permiso,
+                "Permiso obtenido correctamente."
+            );
 
         } catch (error) {
-
-            return res.status(404).json({
-                success: false,
-                message: error.message
-            });
-
+            next(error);
         }
     }
 
-    async actualizar(req, res) {
+    async actualizar(req, res, next) {
         try {
 
             const permiso = await permisoService.actualizar(
@@ -71,39 +63,32 @@ class PermisoController {
                 req.body
             );
 
-            return res.status(200).json({
-                success: true,
-                message: "Permiso actualizado correctamente.",
-                data: permiso
-            });
+            return successResponse(
+                res,
+                permiso,
+                "Permiso actualizado correctamente."
+            );
 
         } catch (error) {
-
-            return res.status(400).json({
-                success: false,
-                message: error.message
-            });
-
+            next(error);
         }
     }
 
-    async eliminar(req, res) {
+    async eliminar(req, res, next) {
         try {
 
-            await permisoService.eliminar(req.params.id);
+            await permisoService.eliminar(
+                req.params.id
+            );
 
-            return res.status(200).json({
-                success: true,
-                message: "Permiso eliminado correctamente."
-            });
+            return successResponse(
+                res,
+                null,
+                "Permiso eliminado correctamente."
+            );
 
         } catch (error) {
-
-            return res.status(404).json({
-                success: false,
-                message: error.message
-            });
-
+            next(error);
         }
     }
 

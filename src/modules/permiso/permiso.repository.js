@@ -7,20 +7,33 @@ class PermisoRepository {
     }
 
     async obtenerTodos() {
-        return await Permiso.find();
+        return await Permiso.find({
+            activo: true
+        }).sort({
+            createdAt: -1
+        });
     }
 
     async obtenerPorId(id) {
-        return await Permiso.findById(id);
+        return await Permiso.findOne({
+            _id: id,
+            activo: true
+        });
     }
 
     async obtenerPorCodigo(codigo) {
-        return await Permiso.findOne({ codigo });
+        return await Permiso.findOne({
+            codigo,
+            activo: true
+        });
     }
 
     async actualizar(id, datos) {
-        return await Permiso.findByIdAndUpdate(
-            id,
+        return await Permiso.findOneAndUpdate(
+            {
+                _id: id,
+                activo: true
+            },
             datos,
             {
                 new: true,
@@ -30,7 +43,15 @@ class PermisoRepository {
     }
 
     async eliminar(id) {
-        return await Permiso.findByIdAndDelete(id);
+        return await Permiso.findByIdAndUpdate(
+            id,
+            {
+                activo: false
+            },
+            {
+                new: true
+            }
+        );
     }
 
 }

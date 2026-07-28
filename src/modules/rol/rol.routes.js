@@ -2,7 +2,9 @@ import { Router } from "express";
 
 import rolController from "./rol.controller.js";
 
-import { validarSchema } from "./rol.schema.js";
+import validateSchema from "../../middlewares/validateSchema.js";
+import authMiddleware from "../../middlewares/auth.middleware.js";
+import permisoMiddleware from "../../middlewares/permiso.middleware.js";
 
 import {
     crearRolSchema,
@@ -11,22 +13,56 @@ import {
 
 const router = Router();
 
-router.get("/", rolController.obtenerTodos);
-
-router.get("/:id", rolController.obtenerPorId);
-
+// =========================
+// Crear rol
+// =========================
 router.post(
     "/",
-    validarSchema(crearRolSchema),
+    authMiddleware,
+    permisoMiddleware("roles.crear"),
+    validateSchema(crearRolSchema),
     rolController.crear
 );
 
+// =========================
+// Obtener todos los roles
+// =========================
+router.get(
+    "/",
+    authMiddleware,
+    permisoMiddleware("roles.ver"),
+    rolController.obtenerTodos
+);
+
+// =========================
+// Obtener rol por ID
+// =========================
+router.get(
+    "/:id",
+    authMiddleware,
+    permisoMiddleware("roles.ver"),
+    rolController.obtenerPorId
+);
+
+// =========================
+// Actualizar rol
+// =========================
 router.put(
     "/:id",
-    validarSchema(actualizarRolSchema),
+    authMiddleware,
+    permisoMiddleware("roles.editar"),
+    validateSchema(actualizarRolSchema),
     rolController.actualizar
 );
 
-router.delete("/:id", rolController.eliminar);
+// =========================
+// Eliminar rol
+// =========================
+router.delete(
+    "/:id",
+    authMiddleware,
+    permisoMiddleware("roles.eliminar"),
+    rolController.eliminar
+);
 
 export default router;

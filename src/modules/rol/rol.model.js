@@ -6,7 +6,8 @@ const rolSchema = new mongoose.Schema(
             type: String,
             required: [true, "El nombre del rol es obligatorio"],
             unique: true,
-            trim: true
+            trim: true,
+            uppercase: true
         },
 
         descripcion: {
