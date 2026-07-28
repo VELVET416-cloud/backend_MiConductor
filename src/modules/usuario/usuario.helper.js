@@ -46,22 +46,20 @@ class UsuarioHelper {
 
         }
 
-        // Buscar rol automáticamente
-        const rol =
-            await RolRepository.obtenerPorNombre(
-                nombreRol.toUpperCase()
-            );
+        // Verificar que el rol exista
+
+        const rol = await RolRepository.obtenerPorId(
+            datos.rol
+        );
 
         if (!rol) {
 
             throw new AppError(
-                `No existe el rol ${nombreRol}.`,
+                "El rol seleccionado no existe.",
                 404
             );
 
         }
-
-        datos.rol = rol._id;
 
         // Encriptar contraseña
         const salt = await bcrypt.genSalt(10);

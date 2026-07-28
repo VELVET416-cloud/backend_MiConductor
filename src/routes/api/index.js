@@ -1,5 +1,6 @@
 import { Router } from "express";
 
+import authRoutes from "../../modules/auth/auth.routes.js";
 import rolRoutes from "../../modules/rol/rol.routes.js";
 import permisoRoutes from "../../modules/permiso/permiso.routes.js";
 import usuarioRoutes from "../../modules/usuario/usuario.routes.js";
@@ -18,6 +19,7 @@ router.get("/", (req, res) => {
     });
 });
 
+router.use("/auth", authRoutes);
 router.use("/roles", rolRoutes);
 router.use("/permisos", permisoRoutes);
 router.use("/usuarios", usuarioRoutes);

@@ -3,6 +3,8 @@ import { Router } from "express";
 import rolController from "./rol.controller.js";
 
 import validateSchema from "../../middlewares/validateSchema.js";
+import authMiddleware from "../../middlewares/auth.middleware.js";
+import permisoMiddleware from "../../middlewares/permiso.middleware.js";
 
 import {
     crearRolSchema,
@@ -16,6 +18,8 @@ const router = Router();
 // =========================
 router.post(
     "/",
+    authMiddleware,
+    permisoMiddleware("roles.crear"),
     validateSchema(crearRolSchema),
     rolController.crear
 );
@@ -25,6 +29,8 @@ router.post(
 // =========================
 router.get(
     "/",
+    authMiddleware,
+    permisoMiddleware("roles.ver"),
     rolController.obtenerTodos
 );
 
@@ -33,6 +39,8 @@ router.get(
 // =========================
 router.get(
     "/:id",
+    authMiddleware,
+    permisoMiddleware("roles.ver"),
     rolController.obtenerPorId
 );
 
@@ -41,6 +49,8 @@ router.get(
 // =========================
 router.put(
     "/:id",
+    authMiddleware,
+    permisoMiddleware("roles.editar"),
     validateSchema(actualizarRolSchema),
     rolController.actualizar
 );
@@ -50,6 +60,8 @@ router.put(
 // =========================
 router.delete(
     "/:id",
+    authMiddleware,
+    permisoMiddleware("roles.eliminar"),
     rolController.eliminar
 );
 
