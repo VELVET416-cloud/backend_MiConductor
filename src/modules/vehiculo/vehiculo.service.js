@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 import VehiculoRepository from "./vehiculo.repository.js";
 import ClienteRepository from "../cliente/cliente.repository.js";
-import AppError from "../../utils/AppError.js";
+import AppError from "../../utils/appError.js";
 
 class VehiculoService {
 

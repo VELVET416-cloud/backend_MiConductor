@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 import rolRepository from "./rol.repository.js";
 import Permiso from "../permiso/permiso.model.js";
-import AppError from "../../utils/AppError.js";
+import AppError from "../../utils/appError.js";
 
 class RolService {
 

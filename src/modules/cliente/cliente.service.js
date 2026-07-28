@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 import ClienteRepository from "./cliente.repository.js";
 import UsuarioRepository from "../usuario/usuario.repository.js";
-import AppError from "../../utils/AppError.js";
+import AppError from "../../utils/appError.js";
 
 class ClienteService {
 

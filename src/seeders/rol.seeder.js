@@ -1,7 +1,12 @@
+import mongoose from "mongoose";
 import Rol from "../modules/rol/rol.model.js";
 import Permiso from "../modules/permiso/permiso.model.js";
 
 export const seedRoles = async () => {
+    if (mongoose.connection.readyState !== 1) {
+        console.log("⚠ Se omite el seed de roles porque no hay conexión a MongoDB.");
+        return;
+    }
 
     // Obtener todos los permisos existentes
     const todosLosPermisos = await Permiso.find({}, "_id");

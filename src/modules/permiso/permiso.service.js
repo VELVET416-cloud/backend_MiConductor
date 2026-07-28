@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 import permisoRepository from "./permiso.repository.js";
 
-import AppError from "../../utils/AppError.js";
+import AppError from "../../utils/appError.js";
 
 class PermisoService {
 

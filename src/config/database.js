@@ -2,6 +2,11 @@ import mongoose from "mongoose";
 import { env } from "./env.js";
 
 export const connectDB = async () => {
+  if (!env.MONGO_URI) {
+    console.log("⚠ No se encontró MONGO_URI. Se omite la conexión a MongoDB.");
+    return false;
+  }
+
   try {
     console.log("=====================================");
     console.log("Intentando conectar a MongoDB...");
@@ -11,6 +16,7 @@ export const connectDB = async () => {
     await mongoose.connect(env.MONGO_URI);
 
     console.log("✅ Base de datos conectada correctamente.");
+    return true;
   } catch (error) {
     console.log("=====================================");
     console.error("❌ Error al conectar MongoDB");
@@ -22,6 +28,6 @@ export const connectDB = async () => {
     console.error(error);
     console.log("=====================================");
 
-    process.exit(1);
+    return false;
   }
 };

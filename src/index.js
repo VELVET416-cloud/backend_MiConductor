@@ -48,9 +48,14 @@ import { seedRoles } from "./seeders/rol.seeder.js";
 import { seedPermisos } from "./seeders/permiso.seeder.js";
 
 const startServer = async () => {
-  await connectDB();
-  await seedPermisos();
-  await seedRoles()
+  const connected = await connectDB();
+
+  if (connected) {
+    await seedPermisos();
+    await seedRoles();
+  } else {
+    console.log("⚠ Se omite el seed de datos porque no hay conexión a MongoDB.");
+  }
 
   const server = http.createServer(app);
 

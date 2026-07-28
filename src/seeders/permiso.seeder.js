@@ -1,6 +1,11 @@
+import mongoose from "mongoose";
 import Permiso from "../modules/permiso/permiso.model.js";
 
 export const seedPermisos = async () => {
+    if (mongoose.connection.readyState !== 1) {
+        console.log("⚠ Se omite el seed de permisos porque no hay conexión a MongoDB.");
+        return;
+    }
 
     const acciones = [
         "crear",

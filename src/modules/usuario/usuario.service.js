@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 
 import UsuarioRepository from "./usuario.repository.js";
 import RolRepository from "../rol/rol.repository.js";
-import AppError from "../../utils/AppError.js";
+import AppError from "../../utils/appError.js";
 
 class UsuarioService {
 
@@ -249,4 +249,4 @@ class UsuarioService {
 
 }
 
-export default new UsuarioService();z
+export default new UsuarioService();
