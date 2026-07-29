@@ -20,6 +20,22 @@ class AuthRepository {
 
     }
 
+    async obtenerPorId(id) {
+
+        return await Usuario.findOne({
+            _id: id,
+            estado: true
+        }).populate({
+            path: "rol",
+            select: "nombre permisos",
+            populate: {
+                path: "permisos",
+                select: "codigo"
+            }
+        });
+
+    }
+
 }
 
 export default new AuthRepository();
