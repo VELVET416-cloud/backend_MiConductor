@@ -1,7 +1,9 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 
 import AuthRepository from "./auth.repository.js";
+import EmailService from "./email.service.js";
 
 import AppError from "../../utils/AppError.js";
 import { env } from "../../config/env.js";
@@ -10,11 +12,11 @@ class AuthService {
 
     async login(datos) {
 
-        // Normalizar correo
-        const correo = datos.correo.trim().toLowerCase();
+        const correo =
+            datos.correo.trim().toLowerCase();
 
-        // Buscar usuario
-        const usuario = await AuthRepository.obtenerPorCorreo(correo);
+        const usuario =
+            await AuthRepository.obtenerPorCorreo(correo);
 
         if (!usuario) {
             throw new AppError(
@@ -23,11 +25,11 @@ class AuthService {
             );
         }
 
-        // Comparar contraseña
-        const passwordCorrecta = await bcrypt.compare(
-            datos.password,
-            usuario.password
-        );
+        const passwordCorrecta =
+            await bcrypt.compare(
+                datos.password,
+                usuario.password
+            );
 
         if (!passwordCorrecta) {
             throw new AppError(
@@ -36,11 +38,13 @@ class AuthService {
             );
         }
 
-        console.log(
-    JSON.stringify(usuario, null, 2)
-);
+        if (usuario.rol.nombre !== "ADMINISTRADOR") {
+            throw new AppError(
+                "Este usuario no tiene acceso al panel administrativo.",
+                403
+            );
+        }
 
-        // Generar JWT
         const token = jwt.sign(
             {
                 id: usuario._id
@@ -50,11 +54,78 @@ class AuthService {
                 expiresIn: "8h"
             }
         );
-        // Quitar contraseña
+
         return {
             token
         };
     }
+
+
+    async forgotPassword(datos) {
+
+        const correo =
+            datos.correo.trim().toLowerCase();
+
+        const usuario =
+            await AuthRepository.obtenerPorCorreo(correo);
+
+        if (!usuario) {
+            return;
+        }
+
+        const token =
+            crypto.randomBytes(32).toString("hex");
+
+        const expiracion =
+            new Date(
+                Date.now() + 15 * 60 * 1000
+            );
+
+        await AuthRepository.guardarTokenRecuperacion(
+            usuario._id,
+            token,
+            expiracion
+        );
+
+        await EmailService.enviarCorreoRecuperacion(
+            usuario.correo,
+            usuario.nombre,
+            token
+        );
+
+    }
+
+    async resetPassword(datos) {
+
+    const usuario =
+        await AuthRepository.obtenerPorTokenRecuperacion(
+            datos.token
+        );
+
+    if (!usuario) {
+
+        throw new AppError(
+            "El enlace de recuperación no es válido o ha expirado.",
+            400
+        );
+
+    }
+
+    const salt =
+        await bcrypt.genSalt(10);
+
+    const passwordHash =
+        await bcrypt.hash(
+            datos.password,
+            salt
+        );
+
+    await AuthRepository.actualizarPassword(
+        usuario._id,
+        passwordHash
+    );
+
+}
 
 }
 
