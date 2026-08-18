@@ -42,6 +42,18 @@ const usuarioSchema = new mongoose.Schema(
             select: false
         },
 
+        resetPasswordToken: {
+            type: String,
+            default: null,
+            select: false
+        },
+
+        resetPasswordExpires: {
+            type: Date,
+            default: null,
+            select: false
+        },
+
         telefono: {
             type: String,
             required: [true, "El teléfono es obligatorio."],
@@ -57,6 +69,19 @@ const usuarioSchema = new mongoose.Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: "Rol",
             required: [true, "El rol es obligatorio."]
+        },
+
+        // Recuperación de contraseña
+        resetPasswordToken: {
+            type: String,
+            default: null,
+            select: false
+        },
+
+        resetPasswordExpires: {
+            type: Date,
+            default: null,
+            select: false
         }
     },
     {
@@ -67,4 +92,4 @@ const usuarioSchema = new mongoose.Schema(
 
 const Usuario = mongoose.model("Usuario", usuarioSchema);
 
-export default Usuario;
+export default Usuario; 

@@ -8,6 +8,10 @@ export const env = {
     CLIENT_URL: process.env.CLIENT_URL,
 
     JWT_SECRET: process.env.JWT_SECRET,
+    JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || "8h",
 
-    JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || "8h"
+    MAIL_HOST: process.env.MAIL_HOST,
+    MAIL_PORT: process.env.MAIL_PORT || 587,
+    MAIL_USER: process.env.MAIL_USER,
+    MAIL_PASSWORD: process.env.MAIL_PASSWORD
 };
