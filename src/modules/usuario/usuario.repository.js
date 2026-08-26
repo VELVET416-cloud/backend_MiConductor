@@ -27,6 +27,12 @@ class UsuarioRepository {
         return await Usuario.findOne({ documento });
     }
 
+    async contarPorRol(rolId) {
+        return await Usuario.countDocuments({
+            rol: rolId,
+            estado: true
+        });
+    }
     async actualizar(id, datosUsuario) {
         return await Usuario.findOneAndUpdate(
             {

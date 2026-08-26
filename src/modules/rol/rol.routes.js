@@ -30,7 +30,7 @@ router.post(
 router.get(
     "/",
     authMiddleware,
-    permisoMiddleware("roles.ver"),
+    permisoMiddleware("ver.roles"),
     rolController.obtenerTodos
 );
 
@@ -40,7 +40,7 @@ router.get(
 router.get(
     "/:id",
     authMiddleware,
-    permisoMiddleware("roles.ver"),
+    permisoMiddleware("ver.roles"),
     rolController.obtenerPorId
 );
 
@@ -50,7 +50,7 @@ router.get(
 router.put(
     "/:id",
     authMiddleware,
-    permisoMiddleware("roles.editar"),
+    permisoMiddleware("editar.roles"),
     validateSchema(actualizarRolSchema),
     rolController.actualizar
 );
@@ -61,7 +61,7 @@ router.put(
 router.delete(
     "/:id",
     authMiddleware,
-    permisoMiddleware("roles.eliminar"),
+    permisoMiddleware("eliminar.roles"),
     rolController.eliminar
 );
 
