@@ -7,7 +7,7 @@ class UsuarioRepository {
     }
 
     async obtenerTodos() {
-        return await Usuario.find({ estado: true })
+        return await Usuario.find()
             .populate("rol", "nombre descripcion")
             .sort({ createdAt: -1 });
     }
