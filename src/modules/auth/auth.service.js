@@ -58,6 +58,40 @@ class AuthService {
         return {
             token
         };
+    }
+
+
+    async forgotPassword(datos) {
+
+        const correo =
+            datos.correo.trim().toLowerCase();
+
+        const usuario =
+            await AuthRepository.obtenerPorCorreo(correo);
+
+        if (!usuario) {
+            return;
+        }
+
+        const token =
+            crypto.randomBytes(32).toString("hex");
+
+        const expiracion =
+            new Date(
+                Date.now() + 15 * 60 * 1000
+            );
+
+        await AuthRepository.guardarTokenRecuperacion(
+            usuario._id,
+            token,
+            expiracion
+        );
+
+        await EmailService.enviarCorreoRecuperacion(
+            usuario.correo,
+            usuario.nombre,
+            token
+        );
 
         usuario.ultimoAcceso = new Date();
         await usuario.save();
@@ -130,6 +164,38 @@ class AuthService {
         );
 
     }
+
+    async resetPassword(datos) {
+
+    const usuario =
+        await AuthRepository.obtenerPorTokenRecuperacion(
+            datos.token
+        );
+
+    if (!usuario) {
+
+        throw new AppError(
+            "El enlace de recuperación no es válido o ha expirado.",
+            400
+        );
+
+    }
+
+    const salt =
+        await bcrypt.genSalt(10);
+
+    const passwordHash =
+        await bcrypt.hash(
+            datos.password,
+            salt
+        );
+
+    await AuthRepository.actualizarPassword(
+        usuario._id,
+        passwordHash
+    );
+
+}
 
 }
 

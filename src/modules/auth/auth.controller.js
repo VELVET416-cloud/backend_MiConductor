@@ -17,6 +17,45 @@ class AuthController {
             next(error);
         }
     }
+    async forgotPassword(req, res, next) {
+
+        try {
+
+            await AuthService.forgotPassword(req.body);
+
+            return successResponse(
+                res,
+                null,
+                "Si el correo está registrado, recibirás un enlace para restablecer tu contraseña."
+            );
+
+        } catch (error) {
+
+            next(error);
+
+        }
+
+    }
+
+    async resetPassword(req, res, next) {
+
+        try {
+
+            await AuthService.resetPassword(req.body);
+
+            return successResponse(
+                res,
+                null,
+                "Contraseña actualizada correctamente."
+            );
+
+        } catch (error) {
+
+            next(error);
+
+        }
+
+    }
 
     async forgotPassword(req, res, next) {
         try {
