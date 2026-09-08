@@ -221,7 +221,7 @@ importers:
         version: 17.4.2
       express:
         specifier: 5.2.1
-        version: 5.2.1
+        version: 5.2.1(supports-color@5.5.0)
       express-validator:
         specifier: 7.3.2
         version: 7.3.2
@@ -237,9 +237,12 @@ importers:
       morgan:
         specifier: 1.11.0
         version: 1.11.0
+      nodemailer:
+        specifier: ^9.0.5
+        version: 9.0.5
       socket.io:
         specifier: 4.8.3
-        version: 4.8.3
+        version: 4.8.3(supports-color@5.5.0)
       zod:
         specifier: 4.4.3
         version: 4.4.3
@@ -681,6 +684,10 @@ packages:
     resolution: {integrity: sha512-LA4ZjwlnUblHVgq0oBF3Jl/6h/Nvs5fzBLwdEF4nuxnFdsfajde4WfxtJr3CaiH+F6ewcIB/q4jQ4UzPyid+CQ==}
     hasBin: true
 
+  nodemailer@9.0.5:
+    resolution: {integrity: sha512-wvjiKvjczmsN7U/8006JOdXubgBk2XFAbioDMbT+sM7cPs0QrhJTa6KBRX7P5REGGkDcLUz/EarWidb8G8C1jQ==}
+    engines: {node: '>=6.0.0'}
+
   nodemon@3.1.14:
     resolution: {integrity: sha512-jakjZi93UtB3jHMWsXL68FXSAosbLfY0In5gtKq3niLSkrWznrVBzXFNOEMJUfc9+Ke7SHWoAZsiMkNP3vq6Jw==}
     engines: {node: '>=10'}
@@ -943,7 +950,7 @@ snapshots:
 
   binary-extensions@2.3.0: {}
 
-  body-parser@2.3.0:
+  body-parser@2.3.0(supports-color@5.5.0):
     dependencies:
       bytes: 3.1.2
       content-type: 2.0.0
@@ -1045,7 +1052,7 @@ snapshots:
 
   engine.io-parser@5.2.3: {}
 
-  engine.io@6.6.9:
+  engine.io@6.6.9(supports-color@5.5.0):
     dependencies:
       '@types/cors': 2.8.19
       '@types/node': 26.1.1
@@ -1079,10 +1086,10 @@ snapshots:
       lodash: 4.18.1
       validator: 13.15.35
 
-  express@5.2.1:
+  express@5.2.1(supports-color@5.5.0):
     dependencies:
       accepts: 2.0.0
-      body-parser: 2.3.0
+      body-parser: 2.3.0(supports-color@5.5.0)
       content-disposition: 1.1.0
       content-type: 1.0.5
       cookie: 0.7.2
@@ -1092,7 +1099,7 @@ snapshots:
       encodeurl: 2.0.0
       escape-html: 1.0.3
       etag: 1.8.1
-      finalhandler: 2.1.1
+      finalhandler: 2.1.1(supports-color@5.5.0)
       fresh: 2.0.0
       http-errors: 2.0.1
       merge-descriptors: 2.0.0
@@ -1103,8 +1110,8 @@ snapshots:
       proxy-addr: 2.0.7
       qs: 6.15.3
       range-parser: 1.3.0
-      router: 2.2.0
-      send: 1.2.1
+      router: 2.2.0(supports-color@5.5.0)
+      send: 1.2.1(supports-color@5.5.0)
       serve-static: 2.2.1
       statuses: 2.0.2
       type-is: 2.1.0
@@ -1116,7 +1123,7 @@ snapshots:
     dependencies:
       to-regex-range: 5.0.1
 
-  finalhandler@2.1.1:
+  finalhandler@2.1.1(supports-color@5.5.0):
     dependencies:
       debug: 4.4.3(supports-color@5.5.0)
       encodeurl: 2.0.0
@@ -1323,6 +1330,8 @@ snapshots:
 
   node-gyp-build@4.8.4: {}
 
+  nodemailer@9.0.5: {}
+
   nodemon@3.1.14:
     dependencies:
       chokidar: 3.6.0
@@ -1385,7 +1394,7 @@ snapshots:
     dependencies:
       picomatch: 2.3.2
 
-  router@2.2.0:
+  router@2.2.0(supports-color@5.5.0):
     dependencies:
       debug: 4.4.3(supports-color@5.5.0)
       depd: 2.0.0
@@ -1403,7 +1412,7 @@ snapshots:
 
   semver@7.8.5: {}
 
-  send@1.2.1:
+  send@1.2.1(supports-color@5.5.0):
     dependencies:
       debug: 4.4.3(supports-color@5.5.0)
       encodeurl: 2.0.0
@@ -1424,7 +1433,7 @@ snapshots:
       encodeurl: 2.0.0
       escape-html: 1.0.3
       parseurl: 1.3.3
-      send: 1.2.1
+      send: 1.2.1(supports-color@5.5.0)
     transitivePeerDependencies:
       - supports-color
 
@@ -1464,7 +1473,7 @@ snapshots:
     dependencies:
       semver: 7.8.5
 
-  socket.io-adapter@2.5.8:
+  socket.io-adapter@2.5.8(supports-color@5.5.0):
     dependencies:
       debug: 4.4.3(supports-color@5.5.0)
       ws: 8.21.1
@@ -1473,22 +1482,22 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  socket.io-parser@4.2.7:
+  socket.io-parser@4.2.7(supports-color@5.5.0):
     dependencies:
       '@socket.io/component-emitter': 3.1.2
       debug: 4.4.3(supports-color@5.5.0)
     transitivePeerDependencies:
       - supports-color
 
-  socket.io@4.8.3:
+  socket.io@4.8.3(supports-color@5.5.0):
     dependencies:
       accepts: 1.3.8
       base64id: 2.0.0
       cors: 2.8.6
       debug: 4.4.3(supports-color@5.5.0)
-      engine.io: 6.6.9
-      socket.io-adapter: 2.5.8
-      socket.io-parser: 4.2.7
+      engine.io: 6.6.9(supports-color@5.5.0)
+      socket.io-adapter: 2.5.8(supports-color@5.5.0)
+      socket.io-parser: 4.2.7(supports-color@5.5.0)
     transitivePeerDependencies:
       - bufferutil
       - supports-color

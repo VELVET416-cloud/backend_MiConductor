@@ -9,6 +9,7 @@ import vehiculoRoutes from "../../modules/vehiculo/vehiculo.routes.js";
 import conductorRoutes from "../../modules/conductor/conductor.routes.js";
 import solicitudRoutes from "../../modules/solicitud/solicitud.routes.js";
 import novedadRoutes from "../../modules/novedad/novedad.routes.js";
+import invitadoRoutes from "../../modules/invitado/invitado.routes.js";
 
 const router = Router();
 
@@ -28,5 +29,6 @@ router.use("/vehiculos", vehiculoRoutes);
 router.use("/conductores", conductorRoutes);
 router.use("/solicitudes", solicitudRoutes);
 router.use("/novedades", novedadRoutes);
+router.use("/invitado", invitadoRoutes);
 
 export default router;
