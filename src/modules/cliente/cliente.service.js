@@ -39,7 +39,7 @@ class ClienteService {
 
         try {
 
-            // Crear registro de Cliente
+            // Crear registro de Cliente con referencia al usuario creado
             const cliente = await ClienteRepository.crear({
                 usuario: usuario._id,
                 direccion: datos.direccion
