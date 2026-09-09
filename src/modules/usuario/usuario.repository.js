@@ -14,8 +14,7 @@ class UsuarioRepository {
 
     async obtenerPorId(id) {
         return await Usuario.findOne({
-            _id: id,
-            estado: true
+            _id: id
         }).populate("rol", "nombre descripcion");
     }
 
@@ -36,8 +35,7 @@ class UsuarioRepository {
     async actualizar(id, datosUsuario) {
         return await Usuario.findOneAndUpdate(
             {
-                _id: id,
-                estado: true
+                _id: id
             },
             datosUsuario,
             {
