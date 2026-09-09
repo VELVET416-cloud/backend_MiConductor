@@ -13,10 +13,20 @@ const transporter = nodemailer.createTransport({
 
 class EmailService {
 
-    async enviarCorreoRecuperacion(correo, nombre, token) {
+    async enviarCorreoRecuperacion(
+        correo,
+        nombre,
+        token,
+        origen = "web"
+    ) {
+
+        const baseUrl =
+            origen === "mobile"
+                ? env.MOBILE_CLIENT_URL
+                : env.CLIENT_URL;
 
         const enlace =
-            `${env.CLIENT_URL}/reset-password?token=${token}`;
+            `${baseUrl}/reset-password?token=${token}`;
 
         await transporter.sendMail({
             from: `"Mi Conductor" <${env.MAIL_USER}>`,
