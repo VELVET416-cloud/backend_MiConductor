@@ -21,6 +21,11 @@ router.post(
     AuthController.login
 );
 
+router.post(
+    "/mobile-login",
+    validateSchema(loginSchema),
+    AuthController.mobileLogin
+);
 
 router.post(
     "/forgot-password",

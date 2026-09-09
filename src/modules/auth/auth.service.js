@@ -60,6 +60,57 @@ class AuthService {
         };
     }
 
+    async mobileLogin(datos) {
+        const correo = datos.correo.trim().toLowerCase();
+
+        const usuario = await AuthRepository.obtenerPorCorreo(correo);
+
+        if (!usuario) {
+            throw new AppError(
+                "Correo o contraseña incorrectos.",
+                401
+            );
+        }
+
+        const passwordCorrecta = await bcrypt.compare(
+            datos.password,
+            usuario.password
+        );
+
+        if (!passwordCorrecta) {
+            throw new AppError(
+                "Correo o contraseña incorrectos.",
+                401
+            );
+        }
+
+        const rol = usuario.rol.nombre;
+
+        if (rol !== "CONDUCTOR" && rol !== "CLIENTE") {
+            throw new AppError(
+                "Este usuario no tiene acceso a la aplicación móvil.",
+                403
+            );
+        }
+
+        const token = jwt.sign(
+            { id: usuario._id },
+            env.JWT_SECRET,
+            { expiresIn: env.JWT_EXPIRES_IN }
+        );
+
+        return {
+            token,
+            usuario: {
+                id: usuario._id,
+                nombre: usuario.nombre,
+                apellido: usuario.apellido,
+                correo: usuario.correo,
+                rol
+            }
+        };
+    }
+
 
     async forgotPassword(datos) {
 
@@ -90,7 +141,8 @@ class AuthService {
         await EmailService.enviarCorreoRecuperacion(
             usuario.correo,
             usuario.nombre,
-            token
+            token,
+            datos.origen
         );
 
     }

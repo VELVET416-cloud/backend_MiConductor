@@ -23,6 +23,21 @@ class AuthController {
         }
 
     }
+
+    async mobileLogin(req, res, next) {
+        try {
+            const resultado = await AuthService.mobileLogin(req.body);
+
+            return successResponse(
+                res,
+                resultado,
+                "Inicio de sesión exitoso."
+            );
+        } catch (error) {
+            next(error);
+        }
+    }
+
     async forgotPassword(req, res, next) {
 
         try {

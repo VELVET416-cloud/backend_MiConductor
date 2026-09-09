@@ -18,13 +18,10 @@ export const loginSchema = z.object({
 
 
 export const forgotPasswordSchema = z.object({
+    correo: z.string({ required_error: "El correo es obligatorio." })
+        .email("Debe ingresar un correo válido."),
 
-    correo: z
-        .string({
-            required_error: "El correo es obligatorio."
-        })
-        .email("Debe ingresar un correo válido.")
-
+    origen: z.enum(["web", "mobile"]).default("web")
 });
 
 export const resetPasswordSchema = z.object({

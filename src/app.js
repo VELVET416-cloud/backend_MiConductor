@@ -20,11 +20,35 @@ app.get("/", (req, res) => {
   });
 });
 
+const allowedOrigins = [
+    env.CLIENT_URL,
+];
+
 app.use(
-  cors({
-    origin: env.CLIENT_URL,
-    credentials: true,
-  })
+    cors({
+        origin: function (origin, callback) {
+
+            if (!origin) {
+                return callback(null, true);
+            }
+
+            const esLocalhost =
+                origin.startsWith("http://localhost:");
+
+            if (
+                allowedOrigins.includes(origin) ||
+                esLocalhost
+            ) {
+                return callback(null, true);
+            }
+
+            return callback(
+                new Error("Origen no permitido por CORS")
+            );
+        },
+
+        credentials: true,
+    })
 );
 
 app.use(helmet());
