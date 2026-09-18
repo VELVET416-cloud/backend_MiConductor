@@ -19,7 +19,7 @@ const router = Router();
 router.post(
     "/",
     authMiddleware,
-    permisoMiddleware("roles.crear"),
+    permisoMiddleware("crear.roles"),
     validateSchema(crearRolSchema),
     rolController.crear
 );
