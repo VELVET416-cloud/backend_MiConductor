@@ -65,10 +65,18 @@ class ClienteService {
     // OBTENER TODOS
     // ======================================================
 
-    async obtenerTodos() {
+    async obtenerTodos(page, limit, search, estado) {
 
-        return await ClienteRepository.obtenerTodos();
+        return await ClienteRepository.obtenerTodos(page, limit, search, estado);
 
+    }
+
+    // ======================================================
+    // OBTENER LISTA (SIN PAGINAR)
+    // ======================================================
+
+    async obtenerLista() {
+        return await ClienteRepository.obtenerLista();
     }
 
     // ======================================================

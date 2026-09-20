@@ -44,12 +44,16 @@ class ClienteController {
     async obtenerTodos(req, res, next) {
 
         try {
+            const page = parseInt(req.query.page) || 1;
+            const limit = parseInt(req.query.limit) || 10;
+            const search = req.query.search || '';
+            const estado = req.query.estado || '';
 
-            const clientes = await ClienteService.obtenerTodos();
+            const clientesData = await ClienteService.obtenerTodos(page, limit, search, estado);
 
             return successResponse(
                 res,
-                clientes,
+                clientesData,
                 "Clientes obtenidos correctamente."
             );
 
@@ -59,6 +63,23 @@ class ClienteController {
 
         }
 
+    }
+
+    /**
+     * Obtiene una lista no paginada de todos los clientes activos.
+     * Útil para selectores y combos.
+     */
+    async obtenerLista(req, res, next) {
+        try {
+            const clientes = await ClienteService.obtenerLista();
+            return successResponse(
+                res,
+                clientes,
+                "Lista de clientes obtenida correctamente."
+            );
+        } catch (error) {
+            next(error);
+        }
     }
 
     /**

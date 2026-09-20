@@ -6,26 +6,57 @@ class VehiculoRepository {
         return await Vehiculo.create(datosVehiculo);
     }
 
-    async obtenerTodos() {
-        return await Vehiculo.find({ estado: true })
-            .populate({
-                path: "cliente",
-                populate: {
-                    path: "usuario",
-                    select: "-password",
+    async obtenerTodos(page = 1, limit = 10, search = '', estado = '') {
+        const skip = (page - 1) * limit;
+
+        let filter = {};
+
+        if (estado !== undefined && estado !== '') {
+            filter.estado = estado === 'true';
+        }
+
+        if (search && search.trim() !== '') {
+            const q = new RegExp(search.trim(), 'i');
+            filter.$or = [
+                { placa: q },
+                { marca: q },
+                { modelo: q }
+            ];
+        }
+
+        const [rows, total] = await Promise.all([
+            Vehiculo.find(filter)
+                .skip(skip)
+                .limit(limit)
+                .populate({
+                    path: "cliente",
                     populate: {
-                        path: "rol",
-                        select: "nombre descripcion"
+                        path: "usuario",
+                        select: "-password",
+                        populate: {
+                            path: "rol",
+                            select: "nombre descripcion"
+                        }
                     }
-                }
-            })
-            .sort({ createdAt: -1 });
+                })
+                .sort({ createdAt: -1 }),
+            Vehiculo.countDocuments(filter)
+        ]);
+
+        const totalPages = Math.ceil(total / limit);
+
+        return {
+            rows,
+            total,
+            page,
+            totalPages,
+            limit
+        };
     }
 
     async obtenerPorId(id) {
         return await Vehiculo.findOne({
-            _id: id,
-            estado: true
+            _id: id
         }).populate({
             path: "cliente",
             populate: {
@@ -61,8 +92,7 @@ class VehiculoRepository {
     async actualizar(id, datosVehiculo) {
         return await Vehiculo.findOneAndUpdate(
             {
-                _id: id,
-                estado: true
+                _id: id
             },
             datosVehiculo,
             {

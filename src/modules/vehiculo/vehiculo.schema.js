@@ -109,7 +109,9 @@ const crearVehiculoSchema = z.object({
         .string()
         .trim()
         .nullable()
-        .optional()
+        .optional(),
+
+    estado: z.boolean().optional()
 
 });
 

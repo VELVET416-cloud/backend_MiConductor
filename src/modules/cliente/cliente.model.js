@@ -22,9 +22,17 @@ const clienteSchema = new mongoose.Schema(
     },
     {
         timestamps: true,
-        versionKey: false
+        versionKey: false,
+        toJSON: { virtuals: true },
+        toObject: { virtuals: true }
     }
 );
+
+clienteSchema.virtual("vehiculos", {
+    ref: "Vehiculo",
+    localField: "_id",
+    foreignField: "cliente"
+});
 
 const Cliente = mongoose.model("Cliente", clienteSchema);
 

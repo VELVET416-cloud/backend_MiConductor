@@ -66,9 +66,9 @@ class VehiculoService {
     }
 
     // Obtener todos
-    async obtenerTodos() {
+    async obtenerTodos(page, limit, search, estado) {
 
-        return await VehiculoRepository.obtenerTodos();
+        return await VehiculoRepository.obtenerTodos(page, limit, search, estado);
 
     }
 
