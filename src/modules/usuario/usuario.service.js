@@ -62,7 +62,6 @@ class UsuarioService {
 
     // Eliminar usuario
     async eliminar(id) {
-
         if (!mongoose.Types.ObjectId.isValid(id)) {
             throw new AppError(
                 "El id del usuario no es válido.",
@@ -70,7 +69,7 @@ class UsuarioService {
             );
         }
 
-        const usuario = await UsuarioRepository.obtenerPorId(id);
+        const usuario = await UsuarioRepository.eliminar(id);
 
         if (!usuario) {
             throw new AppError(
@@ -79,8 +78,7 @@ class UsuarioService {
             );
         }
 
-        await UsuarioHelper.eliminar(id);
-
+        return usuario;
     }
 
 }
