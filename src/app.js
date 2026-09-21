@@ -9,29 +9,31 @@ import { env } from "./config/env.js";
 import errorMiddleware from "./middlewares/error.middleware.js";
 import notFound from "./middlewares/notFound.middleware.js";
 
-// import rolRoutes from "./modules/rol/rol.routes.js";
-
 const app = express();
 
+// Ruta principal
 app.get("/", (req, res) => {
-  res.json({
-    success: true,
-    message: "Bienvenido a la API de Mi Conductor 🚗",
-  });
+    res.json({
+        success: true,
+        message: "Bienvenido a la API de Mi Conductor 🚗"
+    });
 });
 
+// Orígenes permitidos
 const allowedOrigins = [
-    env.CLIENT_URL,
+    env.CLIENT_URL
 ];
 
 app.use(
     cors({
-        origin: function (origin, callback) {
+        origin: (origin, callback) => {
 
+            // Permitir herramientas como Postman
             if (!origin) {
                 return callback(null, true);
             }
 
+            // Permitir cualquier localhost
             const esLocalhost =
                 origin.startsWith("http://localhost:");
 
@@ -47,7 +49,7 @@ app.use(
             );
         },
 
-        credentials: true,
+        credentials: true
     })
 );
 
@@ -57,7 +59,11 @@ app.use(morgan("dev"));
 
 app.use(express.json());
 
-app.use(express.urlencoded({ extended: true }));
+app.use(
+    express.urlencoded({
+        extended: true
+    })
+);
 
 app.use("/api", routes);
 

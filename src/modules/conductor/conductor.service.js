@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 import ConductorRepository from "./conductor.repository.js";
 import UsuarioRepository from "../usuario/usuario.repository.js";
 import UsuarioHelper from "../usuario/usuario.helper.js";
-
+import RolRepository from "../rol/rol.repository.js";
 import AppError from "../../utils/AppError.js";
 
 class ConductorService {
@@ -14,12 +14,10 @@ class ConductorService {
             datos.licencia?.trim();
 
         if (!licencia) {
-
             throw new AppError(
                 "La licencia es obligatoria.",
                 400
             );
-
         }
 
         const licenciaExiste =
@@ -28,12 +26,22 @@ class ConductorService {
             );
 
         if (licenciaExiste) {
-
             throw new AppError(
                 "La licencia ya se encuentra registrada.",
                 409
             );
+        }
 
+        const rolConductor =
+            await RolRepository.obtenerPorNombre(
+                "CONDUCTOR"
+            );
+
+        if (!rolConductor) {
+            throw new AppError(
+                "El rol CONDUCTOR no está configurado.",
+                500
+            );
         }
 
         let usuarioCreado = null;
@@ -41,62 +49,46 @@ class ConductorService {
         try {
 
             usuarioCreado =
-                await UsuarioHelper.crear(
-                    {
-                        nombre: datos.nombre,
-                        apellido: datos.apellido,
-                        tipoDocumento: datos.tipoDocumento,
-                        documento: datos.documento,
-                        correo: datos.correo,
-                        password: datos.password,
-                        telefono: datos.telefono
-                    },
-                    "CONDUCTOR"
-                );
-
+                await UsuarioHelper.crear({
+                    nombre: datos.nombre,
+                    apellido: datos.apellido,
+                    tipoDocumento: datos.tipoDocumento,
+                    documento: datos.documento,
+                    correo: datos.correo,
+                    password: datos.password,
+                    telefono: datos.telefono,
+                    rol: rolConductor._id
+                });
 
             const conductor =
                 await ConductorRepository.crear({
-
                     usuario: usuarioCreado._id,
-
                     licencia,
-
                     categoriaLicencia:
                         datos.categoriaLicencia
                             ?.trim()
                             .toUpperCase(),
-
                     fechaExpedicion:
                         datos.fechaExpedicion,
-
                     fechaVencimiento:
                         datos.fechaVencimiento,
-
                     experiencia:
                         datos.experiencia ?? 0,
-
                     disponible:
                         datos.disponible ?? false
-
                 });
-
 
             return await ConductorRepository.obtenerPorId(
                 conductor._id
             );
 
         } catch (error) {
-            // SI FALLA LA CREACIÓN DEL CONDUCTOR,
-            // ELIMINAR LÓGICAMENTE EL USUARIO
-            
 
             if (usuarioCreado?._id) {
 
                 await UsuarioRepository.eliminar(
                     usuarioCreado._id
                 );
-
             }
 
             throw error;
@@ -106,7 +98,6 @@ class ConductorService {
     async obtenerTodos() {
 
         return await ConductorRepository.obtenerTodos();
-
     }
 
     async obtenerPorId(id) {
@@ -117,7 +108,6 @@ class ConductorService {
                 "El id del conductor no es válido.",
                 400
             );
-
         }
 
         const conductor =
@@ -129,7 +119,6 @@ class ConductorService {
                 "Conductor no encontrado.",
                 404
             );
-
         }
 
         return conductor;
@@ -143,7 +132,6 @@ class ConductorService {
                 "El id del conductor no es válido.",
                 400
             );
-
         }
 
         const conductor =
@@ -155,7 +143,6 @@ class ConductorService {
                 "Conductor no encontrado.",
                 404
             );
-
         }
 
         const datosUsuario = {};
@@ -192,16 +179,18 @@ class ConductorService {
                 conductor.usuario._id,
                 datosUsuario
             );
-
         }
 
         const datosConductor = {};
 
         if (datos.licencia !== undefined) {
 
+            const licencia =
+                datos.licencia.trim();
+
             const licenciaExiste =
                 await ConductorRepository.obtenerPorLicencia(
-                    datos.licencia.trim()
+                    licencia
                 );
 
             if (
@@ -213,11 +202,10 @@ class ConductorService {
                     "La licencia ya se encuentra registrada.",
                     409
                 );
-
             }
 
             datosConductor.licencia =
-                datos.licencia.trim();
+                licencia;
         }
 
         if (datos.categoriaLicencia !== undefined) {
@@ -244,14 +232,10 @@ class ConductorService {
             datosConductor.disponible =
                 datos.disponible;
 
-
-        const conductorActualizado =
-            await ConductorRepository.actualizar(
-                id,
-                datosConductor
-            );
-
-        return conductorActualizado;
+        return await ConductorRepository.actualizar(
+            id,
+            datosConductor
+        );
     }
 
     async eliminar(id) {
@@ -262,7 +246,6 @@ class ConductorService {
                 "El id del conductor no es válido.",
                 400
             );
-
         }
 
         const conductor =
@@ -274,7 +257,6 @@ class ConductorService {
                 "Conductor no encontrado.",
                 404
             );
-
         }
 
         await ConductorRepository.eliminar(id);
@@ -282,9 +264,7 @@ class ConductorService {
         await UsuarioHelper.eliminar(
             conductor.usuario._id
         );
-
     }
-
 
     async cambiarDisponibilidad(id, disponible) {
 
@@ -294,7 +274,6 @@ class ConductorService {
                 "El id del conductor no es válido.",
                 400
             );
-
         }
 
         const conductor =
@@ -306,7 +285,6 @@ class ConductorService {
                 "Conductor no encontrado.",
                 404
             );
-
         }
 
         return await ConductorRepository.cambiarDisponibilidad(
@@ -315,13 +293,10 @@ class ConductorService {
         );
     }
 
-
     async obtenerDisponibles() {
 
         return await ConductorRepository.obtenerDisponibles();
-
     }
-
 
     async obtenerPorUsuario(usuarioId) {
 
@@ -331,7 +306,6 @@ class ConductorService {
                 "El id del usuario no es válido.",
                 400
             );
-
         }
 
         const conductor =
@@ -345,12 +319,10 @@ class ConductorService {
                 "No existe un conductor asociado a este usuario.",
                 404
             );
-
         }
 
         return conductor;
     }
-    
 
     async actualizarLicencia(id, datos) {
 
@@ -360,7 +332,6 @@ class ConductorService {
                 "El id del conductor no es válido.",
                 400
             );
-
         }
 
         const conductor =
@@ -372,12 +343,14 @@ class ConductorService {
                 "Conductor no encontrado.",
                 404
             );
-
         }
+
+        const licencia =
+            datos.licencia.trim();
 
         const licenciaExiste =
             await ConductorRepository.obtenerPorLicencia(
-                datos.licencia.trim()
+                licencia
             );
 
         if (
@@ -389,23 +362,18 @@ class ConductorService {
                 "La licencia ya se encuentra registrada.",
                 409
             );
-
         }
 
         return await ConductorRepository.actualizarLicencia(
             id,
             {
-                licencia:
-                    datos.licencia.trim(),
-
+                licencia,
                 categoriaLicencia:
                     datos.categoriaLicencia
                         .trim()
                         .toUpperCase(),
-
                 fechaExpedicion:
                     datos.fechaExpedicion,
-
                 fechaVencimiento:
                     datos.fechaVencimiento
             }

@@ -59,23 +59,12 @@ class UsuarioRepository {
         ).populate("rol", "nombre descripcion");
     }
 
-    // Eliminar usuario
-    // Se realiza eliminación lógica:
-    // estado pasa de true a false
+    // Eliminar usuario DEFINITIVAMENTE
     async eliminar(id) {
-        return await Usuario.findOneAndUpdate(
-            {
-                _id: id
-            },
-            {
-                estado: false
-            },
-            {
-                new: true
-            }
-        ).populate("rol", "nombre descripcion");
+        return await Usuario.findOneAndDelete({
+            _id: id
+        });
     }
 }
 
 export default new UsuarioRepository();
-
