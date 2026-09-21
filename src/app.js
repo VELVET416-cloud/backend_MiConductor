@@ -61,9 +61,8 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/api", routes);
 
-app.use(errorMiddleware);
-
 app.use(notFound);
 
+app.use(errorMiddleware);
 
 export default app;
