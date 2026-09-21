@@ -1,13 +1,17 @@
 import bcrypt from "bcrypt";
 
 import UsuarioRepository from "./usuario.repository.js";
+
 import RolRepository from "../rol/rol.repository.js";
+
 import AppError from "../../utils/AppError.js";
 
 class UsuarioHelper {
 
-    async crear(datos, nombreRol) {
+    // Crear usuario
+    async crear(datos) {
 
+        // Limpiar datos
         datos.nombre =
             datos.nombre.trim();
 
@@ -42,7 +46,6 @@ class UsuarioHelper {
                 "Ya existe un usuario con ese documento.",
                 409
             );
-
         }
 
 
@@ -57,27 +60,37 @@ class UsuarioHelper {
                 "Ya existe un usuario con ese correo.",
                 409
             );
+        }
 
+
+        if (!datos.rol) {
+
+            throw new AppError(
+                "El rol es obligatorio.",
+                400
+            );
+        }
+
+        if (!datos.rol) {
+            throw new AppError(
+                "El rol es obligatorio.",
+                400
+            );
         }
 
         const rol =
-            await RolRepository.obtenerPorNombre(
-                nombreRol
+            await RolRepository.obtenerPorId(
+                datos.rol
             );
 
         if (!rol) {
-
             throw new AppError(
-                `El rol ${nombreRol} no existe.`,
+                "El rol seleccionado no existe.",
                 404
             );
-
         }
 
-
-
         datos.rol = rol._id;
-
 
 
         const salt =
@@ -96,7 +109,6 @@ class UsuarioHelper {
         );
     }
 
-
     async actualizar(id, datos) {
 
         const usuario =
@@ -108,55 +120,60 @@ class UsuarioHelper {
                 "Usuario no encontrado.",
                 404
             );
-
         }
 
 
+        // Nombre
         if (datos.nombre) {
 
             datos.nombre =
                 datos.nombre.trim();
-
         }
 
+
+        // Apellido
         if (datos.apellido) {
 
             datos.apellido =
                 datos.apellido.trim();
-
         }
 
+
+        // Tipo de documento
         if (datos.tipoDocumento) {
 
             datos.tipoDocumento =
                 datos.tipoDocumento
                     .trim()
                     .toUpperCase();
-
         }
 
+
+        // Documento
         if (datos.documento) {
 
             datos.documento =
                 datos.documento.trim();
-
         }
 
+
+        // Correo
         if (datos.correo) {
 
             datos.correo =
                 datos.correo
                     .trim()
                     .toLowerCase();
-
         }
 
+
+        // Teléfono
         if (datos.telefono) {
 
             datos.telefono =
                 datos.telefono.trim();
-
         }
+
 
 
         if (
@@ -175,10 +192,8 @@ class UsuarioHelper {
                     "Ya existe un usuario con ese documento.",
                     409
                 );
-
             }
         }
-
 
 
         if (
@@ -197,12 +212,29 @@ class UsuarioHelper {
                     "Ya existe un usuario con ese correo.",
                     409
                 );
-
             }
         }
 
 
-       
+
+        if (datos.rol) {
+
+            const rol =
+                await RolRepository.obtenerPorId(
+                    datos.rol
+                );
+
+            if (!rol) {
+
+                throw new AppError(
+                    "El rol seleccionado no existe.",
+                    404
+                );
+            }
+
+            datos.rol = rol._id;
+        }
+
 
         if (datos.password) {
 
@@ -214,7 +246,6 @@ class UsuarioHelper {
                     datos.password,
                     salt
                 );
-
         }
 
 
@@ -224,10 +255,12 @@ class UsuarioHelper {
         );
     }
 
+
     async eliminar(id) {
 
-        return await UsuarioRepository.eliminar(id);
-
+        return await UsuarioRepository.eliminar(
+            id
+        );
     }
 }
 

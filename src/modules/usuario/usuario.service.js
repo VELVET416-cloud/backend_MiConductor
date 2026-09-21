@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 
 import UsuarioRepository from "./usuario.repository.js";
 import UsuarioHelper from "./usuario.helper.js";
+import ConductorRepository from "../conductor/conductor.repository.js";
 import AppError from "../../utils/AppError.js";
 
 class UsuarioService {
@@ -13,30 +14,34 @@ class UsuarioService {
 
     }
 
-    // Obtener todos
+    // Obtener todos los usuarios
     async obtenerTodos() {
 
         return await UsuarioRepository.obtenerTodos();
 
     }
 
-    // Obtener por ID
+    // Obtener usuario por ID
     async obtenerPorId(id) {
 
         if (!mongoose.Types.ObjectId.isValid(id)) {
+
             throw new AppError(
                 "El id del usuario no es válido.",
                 400
             );
+
         }
 
         const usuario = await UsuarioRepository.obtenerPorId(id);
 
         if (!usuario) {
+
             throw new AppError(
                 "Usuario no encontrado.",
                 404
             );
+
         }
 
         return usuario;
@@ -47,10 +52,12 @@ class UsuarioService {
     async actualizar(id, datos) {
 
         if (!mongoose.Types.ObjectId.isValid(id)) {
+
             throw new AppError(
                 "El id del usuario no es válido.",
                 400
             );
+
         }
 
         return await UsuarioHelper.actualizar(
@@ -60,25 +67,50 @@ class UsuarioService {
 
     }
 
-    // Eliminar usuario
+    // Eliminar usuario DEFINITIVAMENTE
     async eliminar(id) {
+
+        // Validar ID
         if (!mongoose.Types.ObjectId.isValid(id)) {
+
             throw new AppError(
                 "El id del usuario no es válido.",
                 400
             );
+
         }
 
-        const usuario = await UsuarioRepository.eliminar(id);
+        // Verificar que el usuario exista
+        const usuario = await UsuarioRepository.obtenerPorId(id);
 
         if (!usuario) {
+
             throw new AppError(
                 "Usuario no encontrado.",
                 404
             );
+
         }
 
-        return usuario;
+        // Buscar y eliminar el conductor relacionado
+        // mediante el campo conductor.usuario
+        await ConductorRepository.eliminarPorUsuario(id);
+
+        // Eliminar definitivamente el usuario
+        const usuarioEliminado =
+            await UsuarioRepository.eliminar(id);
+
+        if (!usuarioEliminado) {
+
+            throw new AppError(
+                "No se pudo eliminar el usuario.",
+                500
+            );
+
+        }
+
+        return usuarioEliminado;
+
     }
 
 }
