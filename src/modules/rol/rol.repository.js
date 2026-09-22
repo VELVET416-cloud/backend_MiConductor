@@ -1,4 +1,7 @@
+// modules/roles/rol.repository.js
+
 import Rol from "./rol.model.js";
+import Usuario from "../usuario/usuario.model.js";
 
 class RolRepository {
 
@@ -10,25 +13,88 @@ class RolRepository {
 
     async obtenerTodos() {
 
-        return await Rol.find({
-            activo: true
-        })
+        const roles = await Rol.find({})
             .populate(
                 "permisos",
                 "nombre codigo modulo descripcion activo"
             )
             .sort({
                 nombre: 1
-            });
+            })
+            .lean();
+
+        const rolesConUsuarios = await Promise.all(
+
+            roles.map(async (rol) => {
+
+                const usuarios = await Usuario.countDocuments({
+                    rol: rol._id,
+                    estado: true
+                });
+
+                return {
+                    ...rol,
+                    usuariosAsignados: usuarios
+                };
+
+            })
+
+        );
+
+        return rolesConUsuarios;
 
     }
 
     async obtenerPorId(id) {
 
-        return await Rol.findOne({
-            _id: id,
-            activo: true
+        const rol = await Rol.findOne({
+            _id: id
         })
+            .populate(
+                "permisos",
+                "nombre codigo modulo descripcion activo"
+            )
+            .lean();
+
+        if (!rol) {
+            return null;
+        }
+
+        const usuarios = await Usuario.countDocuments({
+            rol: rol._id,
+            estado: true
+        });
+
+        return {
+            ...rol,
+            usuariosAsignados: usuarios
+        };
+
+    }
+
+
+    async obtenerPorNombre(nombre) {
+
+        return await Rol.findOne({
+            nombre
+        });
+
+    }
+
+
+
+    async actualizar(id, datos) {
+
+        return await Rol.findOneAndUpdate(
+            {
+                _id: id
+            },
+            datos,
+            {
+                new: true,
+                runValidators: true
+            }
+        )
             .populate(
                 "permisos",
                 "nombre codigo modulo descripcion activo"
@@ -36,33 +102,7 @@ class RolRepository {
 
     }
 
-    async obtenerPorNombre(nombre) {
 
-        return await Rol.findOne({
-            nombre,
-            activo: true
-        });
-
-    }
-
-    async actualizar(id, datos) {
-
-        return await Rol.findOneAndUpdate(
-            {
-                _id: id,
-                activo: true
-            },
-            datos,
-            {
-                new: true,
-                runValidators: true
-            }
-        ).populate(
-            "permisos",
-            "nombre codigo modulo descripcion activo"
-        );
-
-    }
 
     async eliminar(id) {
 
@@ -72,12 +112,14 @@ class RolRepository {
                 activo: false
             },
             {
-                new: true
+                new: true,
+                runValidators: true
             }
         );
 
     }
 
 }
+
 
 export default new RolRepository();

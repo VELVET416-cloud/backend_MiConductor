@@ -46,8 +46,7 @@ const conductorBaseSchema = z.object({
     correo: z
         .string({
             required_error: "El correo es obligatorio."
-        })
-        .email(),
+        }),
 
     password: z
         .string({

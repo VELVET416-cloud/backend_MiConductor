@@ -7,7 +7,7 @@ class ClienteRepository {
     }
 
     async obtenerTodos() {
-        return await Cliente.find({ estado: true })
+        return await Cliente.find({})
             .populate({
                 path: "usuario",
                 select: "-password",
