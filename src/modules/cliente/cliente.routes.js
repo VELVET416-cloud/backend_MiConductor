@@ -18,10 +18,16 @@ router.post(
     ClienteController.crear
 );
 
-// Obtener todos los clientes
+// Obtener todos los clientes (Paginado)
 router.get(
     "/",
     ClienteController.obtenerTodos
+);
+
+// Obtener lista completa de clientes activos (Sin paginar)
+router.get(
+    "/lista",
+    ClienteController.obtenerLista
 );
 
 // Obtener cliente por ID

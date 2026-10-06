@@ -75,6 +75,11 @@ class UsuarioRepository {
             }
         ).populate("rol", "nombre descripcion");
     }
+
+    // Eliminación física
+    async eliminarFisico(id) {
+        return await Usuario.findByIdAndDelete(id);
+    }
 }
 
 export default new UsuarioRepository();

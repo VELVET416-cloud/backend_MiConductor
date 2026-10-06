@@ -24,12 +24,16 @@ class VehiculoController {
     // Obtener todos
     async obtenerTodos(req, res, next) {
         try {
+            const page = parseInt(req.query.page) || 1;
+            const limit = parseInt(req.query.limit) || 10;
+            const search = req.query.search || '';
+            const estado = req.query.estado || '';
 
-            const vehiculos = await VehiculoService.obtenerTodos();
+            const vehiculosData = await VehiculoService.obtenerTodos(page, limit, search, estado);
 
             return successResponse(
                 res,
-                vehiculos,
+                vehiculosData,
                 "Vehículos obtenidos correctamente."
             );
 
