@@ -124,6 +124,10 @@ class VehiculoRepository {
         );
     }
 
+    async eliminarFisico(id) {
+        return await Vehiculo.findByIdAndDelete(id);
+    }
+
 }
 
 export default new VehiculoRepository();

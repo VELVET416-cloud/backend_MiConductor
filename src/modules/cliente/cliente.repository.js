@@ -125,6 +125,10 @@ class ClienteRepository {
         );
     }
 
+    async eliminarFisico(id) {
+        return await Cliente.findByIdAndDelete(id);
+    }
+
 }
 
 export default new ClienteRepository();

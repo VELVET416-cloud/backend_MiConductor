@@ -4,6 +4,8 @@ import ClienteRepository from "./cliente.repository.js";
 import UsuarioHelper from "../usuario/usuario.helper.js";
 import AppError from "../../utils/AppError.js";
 import RolRepository from "../rol/rol.repository.js";
+import VehiculoRepository from "../vehiculo/vehiculo.repository.js";
+import SolicitudRepository from "../solicitud/solicitud.repository.js";
 
 class ClienteService {
 
@@ -16,13 +18,20 @@ class ClienteService {
         datos.direccion = datos.direccion.trim();
 
         // Buscar el rol CLIENTE
-        const rolCliente = await RolRepository.obtenerPorNombre("CLIENTE");
+        let rolClienteId = datos.rol || datos.rolId;
 
-        if (!rolCliente) {
-            throw new AppError(
-                "El rol CLIENTE no está configurado.",
-                500
-            );
+        if (!rolClienteId) {
+            let rolCliente = await RolRepository.obtenerPorNombre("CLIENTE");
+            if (!rolCliente) rolCliente = await RolRepository.obtenerPorNombre("CLIENTES");
+            if (!rolCliente) rolCliente = await RolRepository.obtenerPorNombre("Cliente");
+
+            if (!rolCliente) {
+                throw new AppError(
+                    "El rol CLIENTE no está configurado.",
+                    500
+                );
+            }
+            rolClienteId = rolCliente._id;
         }
 
         // Crear usuario con rol CLIENTE
@@ -34,7 +43,7 @@ class ClienteService {
             correo: datos.correo,
             password: datos.password,
             telefono: datos.telefono,
-            rol: rolCliente._id
+            rol: rolClienteId
         });
 
         try {
@@ -178,11 +187,33 @@ class ClienteService {
 
         }
 
-        await ClienteRepository.eliminar(id);
+        const vehiculos = await VehiculoRepository.obtenerPorCliente(id);
+        const solicitudes = await SolicitudRepository.obtenerPorCliente(id);
 
-        await UsuarioHelper.eliminar(
-            cliente.usuario._id
-        );
+        if ((vehiculos && vehiculos.length > 0) || (solicitudes && solicitudes.length > 0)) {
+            // Desactivar en lugar de eliminar
+            await ClienteRepository.eliminar(id);
+            if (cliente.usuario && cliente.usuario._id) {
+                await UsuarioHelper.eliminar(cliente.usuario._id);
+            }
+            
+            let msg = "El cliente tiene ";
+            if (vehiculos && vehiculos.length > 0) msg += "vehículos asociados";
+            if (solicitudes && solicitudes.length > 0) {
+                if (vehiculos && vehiculos.length > 0) msg += " y ";
+                msg += "solicitudes de servicio registradas";
+            }
+            throw new AppError(msg + ". Por lo tanto, ha sido desactivado en lugar de eliminado.", 400);
+        }
+
+        // Eliminación física
+        await ClienteRepository.eliminarFisico(id);
+
+        if (cliente.usuario && cliente.usuario._id) {
+            await UsuarioHelper.eliminarFisico(
+                cliente.usuario._id
+            );
+        }
 
         return;
 

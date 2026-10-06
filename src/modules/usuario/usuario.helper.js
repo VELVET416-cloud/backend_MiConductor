@@ -60,25 +60,25 @@ class UsuarioHelper {
 
         }
 
-        const rol =
-            await RolRepository.obtenerPorNombre(
-                nombreRol
-            );
+        if (nombreRol) {
+            const rol =
+                await RolRepository.obtenerPorNombre(
+                    nombreRol
+                );
 
-        if (!rol) {
-
+            if (!rol) {
+                throw new AppError(
+                    `El rol ${nombreRol} no existe.`,
+                    404
+                );
+            }
+            datos.rol = rol._id;
+        } else if (!datos.rol) {
             throw new AppError(
-                `El rol ${nombreRol} no existe.`,
-                404
+                "No se proporcionó un rol para el usuario.",
+                400
             );
-
         }
-
-
-
-        datos.rol = rol._id;
-
-
 
         const salt =
             await bcrypt.genSalt(10);
@@ -228,6 +228,10 @@ class UsuarioHelper {
 
         return await UsuarioRepository.eliminar(id);
 
+    }
+
+    async eliminarFisico(id) {
+        return await UsuarioRepository.eliminarFisico(id);
     }
 }
 
