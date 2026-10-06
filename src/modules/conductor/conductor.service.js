@@ -4,69 +4,67 @@ import ConductorRepository from "./conductor.repository.js";
 import UsuarioRepository from "../usuario/usuario.repository.js";
 import UsuarioHelper from "../usuario/usuario.helper.js";
 
-
 import AppError from "../../utils/AppError.js";
 
 class ConductorService {
 
-    // ======================================================
-    // CREAR CONDUCTOR
-    // ======================================================
-    
     async crear(datos) {
 
-        // Buscar el rol CONDUCTOR
+        const licencia =
+            datos.licencia?.trim();
 
-        
+        if (!licencia) {
 
-        // Crear usuario
+            throw new AppError(
+                "La licencia es obligatoria.",
+                400
+            );
 
-        // Crear usuario
+        }
 
-const usuario =
-    await UsuarioHelper.crear(
-        {
-            nombre: datos.nombre,
-            apellido: datos.apellido,
-            tipoDocumento: datos.tipoDocumento,
-            documento: datos.documento,
-            correo: datos.correo,
-            password: datos.password,
-            telefono: datos.telefono
-        },
-        "CONDUCTOR"
-    );
+        const licenciaExiste =
+            await ConductorRepository.obtenerPorLicencia(
+                licencia
+            );
+
+        if (licenciaExiste) {
+
+            throw new AppError(
+                "La licencia ya se encuentra registrada.",
+                409
+            );
+
+        }
+
+        let usuarioCreado = null;
 
         try {
 
-            // Validar licencia
-
-            const licenciaExiste =
-                await ConductorRepository.obtenerPorLicencia(
-                    datos.licencia.trim()
+            usuarioCreado =
+                await UsuarioHelper.crear(
+                    {
+                        nombre: datos.nombre,
+                        apellido: datos.apellido,
+                        tipoDocumento: datos.tipoDocumento,
+                        documento: datos.documento,
+                        correo: datos.correo,
+                        password: datos.password,
+                        telefono: datos.telefono
+                    },
+                    "CONDUCTOR"
                 );
 
-            if (licenciaExiste) {
-
-                throw new AppError(
-                    "La licencia ya se encuentra registrada.",
-                    409
-                );
-
-            }
-
-            // Crear conductor
 
             const conductor =
                 await ConductorRepository.crear({
 
-                    usuario: usuario._id,
+                    usuario: usuarioCreado._id,
 
-                    licencia: datos.licencia.trim(),
+                    licencia,
 
                     categoriaLicencia:
                         datos.categoriaLicencia
-                            .trim()
+                            ?.trim()
                             .toUpperCase(),
 
                     fechaExpedicion:
@@ -83,38 +81,33 @@ const usuario =
 
                 });
 
+
             return await ConductorRepository.obtenerPorId(
                 conductor._id
             );
 
         } catch (error) {
+            // SI FALLA LA CREACIÓN DEL CONDUCTOR,
+            // ELIMINAR LÓGICAMENTE EL USUARIO
+            
 
-            // Si falla la creación del conductor,
-            // eliminar el usuario creado.
+            if (usuarioCreado?._id) {
 
-            await UsuarioRepository.eliminar(
-                usuario._id
-            );
+                await UsuarioRepository.eliminar(
+                    usuarioCreado._id
+                );
+
+            }
 
             throw error;
-
         }
-
     }
-
-        // ======================================================
-    // OBTENER TODOS
-    // ======================================================
 
     async obtenerTodos() {
 
         return await ConductorRepository.obtenerTodos();
 
     }
-
-    // ======================================================
-    // OBTENER POR ID
-    // ======================================================
 
     async obtenerPorId(id) {
 
@@ -140,12 +133,7 @@ const usuario =
         }
 
         return conductor;
-
     }
-
-    // ======================================================
-    // ACTUALIZAR
-    // ======================================================
 
     async actualizar(id, datos) {
 
@@ -170,41 +158,35 @@ const usuario =
 
         }
 
-        // ==========================
-        // ACTUALIZAR USUARIO
-        // ==========================
-
         const datosUsuario = {};
 
-        if (datos.nombre)
+        if (datos.nombre !== undefined)
             datosUsuario.nombre = datos.nombre;
 
-        if (datos.apellido)
+        if (datos.apellido !== undefined)
             datosUsuario.apellido = datos.apellido;
 
-        if (datos.tipoDocumento)
+        if (datos.tipoDocumento !== undefined)
             datosUsuario.tipoDocumento =
                 datos.tipoDocumento;
 
-        if (datos.documento)
+        if (datos.documento !== undefined)
             datosUsuario.documento =
                 datos.documento;
 
-        if (datos.correo)
+        if (datos.correo !== undefined)
             datosUsuario.correo =
                 datos.correo;
 
-        if (datos.telefono)
+        if (datos.telefono !== undefined)
             datosUsuario.telefono =
                 datos.telefono;
 
-        if (datos.password)
+        if (datos.password !== undefined)
             datosUsuario.password =
                 datos.password;
 
-        if (
-            Object.keys(datosUsuario).length > 0
-        ) {
+        if (Object.keys(datosUsuario).length > 0) {
 
             await UsuarioHelper.actualizar(
                 conductor.usuario._id,
@@ -213,13 +195,9 @@ const usuario =
 
         }
 
-        // ==========================
-        // ACTUALIZAR CONDUCTOR
-        // ==========================
-
         const datosConductor = {};
 
-        if (datos.licencia) {
+        if (datos.licencia !== undefined) {
 
             const licenciaExiste =
                 await ConductorRepository.obtenerPorLicencia(
@@ -240,55 +218,41 @@ const usuario =
 
             datosConductor.licencia =
                 datos.licencia.trim();
-
         }
 
-        if (datos.categoriaLicencia) {
+        if (datos.categoriaLicencia !== undefined) {
 
             datosConductor.categoriaLicencia =
                 datos.categoriaLicencia
                     .trim()
                     .toUpperCase();
-
         }
 
-        if (datos.fechaExpedicion)
+        if (datos.fechaExpedicion !== undefined)
             datosConductor.fechaExpedicion =
                 datos.fechaExpedicion;
 
-        if (datos.fechaVencimiento)
+        if (datos.fechaVencimiento !== undefined)
             datosConductor.fechaVencimiento =
                 datos.fechaVencimiento;
 
-        if (
-            datos.experiencia !== undefined
-        ) {
-
+        if (datos.experiencia !== undefined)
             datosConductor.experiencia =
                 datos.experiencia;
 
-        }
-
-        if (
-            datos.disponible !== undefined
-        ) {
-
+        if (datos.disponible !== undefined)
             datosConductor.disponible =
                 datos.disponible;
 
-        }
 
-        return await ConductorRepository.actualizar(
-            id,
-            datosConductor
-        );
+        const conductorActualizado =
+            await ConductorRepository.actualizar(
+                id,
+                datosConductor
+            );
 
+        return conductorActualizado;
     }
-
-
-        // ======================================================
-    // ELIMINAR
-    // ======================================================
 
     async eliminar(id) {
 
@@ -313,28 +277,16 @@ const usuario =
 
         }
 
-        // Eliminar conductor (lógico)
-
         await ConductorRepository.eliminar(id);
-
-        // Eliminar usuario (lógico)
 
         await UsuarioHelper.eliminar(
             conductor.usuario._id
         );
 
-        return;
-
     }
 
-    // ======================================================
-    // CAMBIAR DISPONIBILIDAD
-    // ======================================================
 
-    async cambiarDisponibilidad(
-        id,
-        disponible
-    ) {
+    async cambiarDisponibilidad(id, disponible) {
 
         if (!mongoose.Types.ObjectId.isValid(id)) {
 
@@ -361,12 +313,8 @@ const usuario =
             id,
             disponible
         );
-
     }
 
-    // ======================================================
-    // OBTENER DISPONIBLES
-    // ======================================================
 
     async obtenerDisponibles() {
 
@@ -374,9 +322,6 @@ const usuario =
 
     }
 
-    // ======================================================
-    // OBTENER POR USUARIO
-    // ======================================================
 
     async obtenerPorUsuario(usuarioId) {
 
@@ -404,12 +349,8 @@ const usuario =
         }
 
         return conductor;
-
     }
-
-    // ======================================================
-    // ACTUALIZAR LICENCIA
-    // ======================================================
+    
 
     async actualizarLicencia(id, datos) {
 
@@ -454,17 +395,22 @@ const usuario =
         return await ConductorRepository.actualizarLicencia(
             id,
             {
-                licencia: datos.licencia.trim(),
-                categoriaLicencia: datos.categoriaLicencia
-                    .trim()
-                    .toUpperCase(),
-                fechaExpedicion: datos.fechaExpedicion,
-                fechaVencimiento: datos.fechaVencimiento
+                licencia:
+                    datos.licencia.trim(),
+
+                categoriaLicencia:
+                    datos.categoriaLicencia
+                        .trim()
+                        .toUpperCase(),
+
+                fechaExpedicion:
+                    datos.fechaExpedicion,
+
+                fechaVencimiento:
+                    datos.fechaVencimiento
             }
         );
-
     }
-
 }
 
 export default new ConductorService();

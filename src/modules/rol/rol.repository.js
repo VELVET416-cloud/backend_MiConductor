@@ -5,23 +5,11 @@ import Usuario from "../usuario/usuario.model.js";
 
 class RolRepository {
 
-    /* =========================================================
-       CREAR
-    ========================================================= */
-
     async crear(datos) {
 
         return await Rol.create(datos);
 
     }
-
-
-    /* =========================================================
-       OBTENER TODOS
-       
-       Trae activos e inactivos.
-       Además cuenta cuántos usuarios activos tiene cada rol.
-    ========================================================= */
 
     async obtenerTodos() {
 
@@ -57,13 +45,6 @@ class RolRepository {
 
     }
 
-
-    /* =========================================================
-       OBTENER POR ID
-       
-       Puede consultar tanto roles activos como inactivos.
-    ========================================================= */
-
     async obtenerPorId(id) {
 
         const rol = await Rol.findOne({
@@ -92,16 +73,6 @@ class RolRepository {
     }
 
 
-    /* =========================================================
-       OBTENER POR NOMBRE
-       
-       Busca el rol independientemente de si está activo
-       o inactivo.
-
-       Esto evita intentar crear otro rol con el mismo nombre
-       cuando ya existe uno inactivo.
-    ========================================================= */
-
     async obtenerPorNombre(nombre) {
 
         return await Rol.findOne({
@@ -111,14 +82,6 @@ class RolRepository {
     }
 
 
-    /* =========================================================
-       ACTUALIZAR
-       
-       Permite cambiar:
-       
-       activo: true  → activo: false
-       activo: false → activo: true
-    ========================================================= */
 
     async actualizar(id, datos) {
 
@@ -140,14 +103,6 @@ class RolRepository {
     }
 
 
-    /* =========================================================
-       ELIMINAR
-       
-       Eliminación lógica.
-       
-       El documento permanece en MongoDB.
-       Solo cambia activo a false.
-    ========================================================= */
 
     async eliminar(id) {
 

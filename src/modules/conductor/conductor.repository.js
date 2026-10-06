@@ -2,9 +2,6 @@ import Conductor from "./conductor.model.js";
 
 class ConductorRepository {
 
-    // ==========================
-    // Crear
-    // ==========================
 
     async crear(datosConductor) {
 
@@ -14,47 +11,34 @@ class ConductorRepository {
 
     }
 
-    // ==========================
-    // Obtener todos
-    // ==========================
-
     async obtenerTodos() {
 
         return await Conductor.find({
-
             estado: true
-
         })
-
             .populate({
                 path: "usuario",
+                select: "-password -resetPasswordToken -resetPasswordExpires",
                 populate: {
                     path: "rol",
                     select: "nombre descripcion"
                 }
             })
-
             .sort({
                 createdAt: -1
             });
 
     }
 
-    // ==========================
-    // Obtener por id
-    // ==========================
-
     async obtenerPorId(id) {
 
         return await Conductor.findOne({
-
             _id: id,
             estado: true
-
         })
-
             .populate({
                 path: "usuario",
+                select: "-password -resetPasswordToken -resetPasswordExpires",
                 populate: {
                     path: "rol",
                     select: "nombre descripcion"
@@ -62,22 +46,16 @@ class ConductorRepository {
             });
 
     }
-
-    // ==========================
-    // Buscar por usuario
-    // ==========================
 
     async obtenerPorUsuario(usuarioId) {
 
         return await Conductor.findOne({
-
             usuario: usuarioId,
             estado: true
-
         })
-
             .populate({
                 path: "usuario",
+                select: "-password -resetPasswordToken -resetPasswordExpires",
                 populate: {
                     path: "rol",
                     select: "nombre descripcion"
@@ -85,50 +63,32 @@ class ConductorRepository {
             });
 
     }
-
-    // ==========================
-    // Buscar licencia
-    // ==========================
 
     async obtenerPorLicencia(licencia) {
 
         return await Conductor.findOne({
-
             licencia,
             estado: true
-
         });
 
     }
 
-    // ==========================
-    // Actualizar
-    // ==========================
-
     async actualizar(id, datosConductor) {
 
         return await Conductor.findOneAndUpdate(
-
             {
-
                 _id: id,
                 estado: true
-
             },
-
             datosConductor,
-
             {
-
                 new: true,
                 runValidators: true
-
             }
-
         )
-
             .populate({
                 path: "usuario",
+                select: "-password -resetPasswordToken -resetPasswordExpires",
                 populate: {
                     path: "rol",
                     select: "nombre descripcion"
@@ -137,35 +97,23 @@ class ConductorRepository {
 
     }
 
-    // ==========================
-    // Eliminar lógico
-    // ==========================
 
     async eliminar(id) {
 
-        return await Conductor.findByIdAndUpdate(
-
-            id,
-
+        return await Conductor.findOneAndUpdate(
             {
-
-                estado: false
-
+                _id: id,
+                estado: true
             },
-
             {
-
+                estado: false
+            },
+            {
                 new: true
-
             }
-
         );
 
     }
-
-    // ==========================
-    // Disponibilidad
-    // ==========================
 
     async cambiarDisponibilidad(
         id,
@@ -173,31 +121,21 @@ class ConductorRepository {
     ) {
 
         return await Conductor.findOneAndUpdate(
-
             {
-
                 _id: id,
                 estado: true
-
             },
-
             {
-
                 disponible
-
             },
-
             {
-
                 new: true,
                 runValidators: true
-
             }
-
         )
-
             .populate({
                 path: "usuario",
+                select: "-password -resetPasswordToken -resetPasswordExpires",
                 populate: {
                     path: "rol",
                     select: "nombre descripcion"
@@ -206,38 +144,25 @@ class ConductorRepository {
 
     }
 
-    // ==========================
-    // Disponibles
-    // ==========================
-
     async obtenerDisponibles() {
 
         return await Conductor.find({
-
             estado: true,
             disponible: true
-
         })
-
             .populate({
                 path: "usuario",
+                select: "-password -resetPasswordToken -resetPasswordExpires",
                 populate: {
                     path: "rol",
                     select: "nombre descripcion"
                 }
             })
-
             .sort({
-
                 createdAt: -1
-
             });
 
     }
-
-    // ==========================
-    // Actualizar licencia
-    // ==========================
 
     async actualizarLicencia(
         id,
@@ -245,27 +170,19 @@ class ConductorRepository {
     ) {
 
         return await Conductor.findOneAndUpdate(
-
             {
-
                 _id: id,
                 estado: true
-
             },
-
             datosLicencia,
-
             {
-
                 new: true,
                 runValidators: true
-
             }
-
         )
-
             .populate({
                 path: "usuario",
+                select: "-password -resetPasswordToken -resetPasswordExpires",
                 populate: {
                     path: "rol",
                     select: "nombre descripcion"
@@ -273,7 +190,6 @@ class ConductorRepository {
             });
 
     }
-
 }
 
 export default new ConductorRepository();
