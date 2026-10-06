@@ -18,21 +18,21 @@ const router = Router();
 router.get(
     "/",
     authMiddleware,
-    permisoMiddleware("permisos.ver"),
+    permisoMiddleware("ver.permisos"),
     permisoController.obtenerTodos
 );
 
 router.get(
     "/:id",
     authMiddleware,
-    permisoMiddleware("permisos.ver"),
+    permisoMiddleware("ver.permisos"),
     permisoController.obtenerPorId
 );
 
 router.post(
     "/",
     authMiddleware,
-    permisoMiddleware("permisos.crear"),
+    permisoMiddleware("crear.permisos"),
     validateSchema(crearPermisoSchema),
     permisoController.crear
 );
@@ -40,7 +40,7 @@ router.post(
 router.put(
     "/:id",
     authMiddleware,
-    permisoMiddleware("permisos.editar"),
+    permisoMiddleware("editar.permisos"),
     validateSchema(actualizarPermisoSchema),
     permisoController.actualizar
 );
@@ -48,7 +48,7 @@ router.put(
 router.delete(
     "/:id",
     authMiddleware,
-    permisoMiddleware("permisos.eliminar"),
+    permisoMiddleware("eliminar.permisos"),
     permisoController.eliminar
 );
 

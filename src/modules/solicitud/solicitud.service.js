@@ -4,6 +4,7 @@ import SolicitudRepository from "./solicitud.repository.js";
 import ClienteRepository from "../cliente/cliente.repository.js";
 import ConductorRepository from "../conductor/conductor.repository.js";
 import VehiculoRepository from "../vehiculo/vehiculo.repository.js";
+import ServicioService from "../servicio/servicio.service.js";
 
 import AppError from "../../utils/AppError.js";
 
@@ -26,7 +27,7 @@ class SolicitudService {
         if (!mongoose.Types.ObjectId.isValid(datos.cliente)) {
 
             throw new AppError(
-                "El cliente enviado no es válido.",
+                "El cliente enviado no es valido.",
                 400
             );
 
@@ -51,7 +52,7 @@ class SolicitudService {
             if (!mongoose.Types.ObjectId.isValid(datos.vehiculo)) {
 
                 throw new AppError(
-                    "El vehículo enviado no es válido.",
+                    "El vehiculo enviado no es valido.",
                     400
                 );
 
@@ -65,7 +66,7 @@ class SolicitudService {
             if (!vehiculo) {
 
                 throw new AppError(
-                    "El vehículo no existe.",
+                    "El vehiculo no existe.",
                     404
                 );
 
@@ -82,7 +83,7 @@ class SolicitudService {
             ) {
 
                 throw new AppError(
-                    "El conductor enviado no es válido.",
+                    "El conductor enviado no es valido.",
                     400
                 );
 
@@ -105,7 +106,7 @@ class SolicitudService {
             if (!conductor.disponible) {
 
                 throw new AppError(
-                    "El conductor no está disponible.",
+                    "El conductor no esta disponible.",
                     409
                 );
 
@@ -121,7 +122,7 @@ class SolicitudService {
         if (codigoExiste) {
 
             throw new AppError(
-                "Ya existe una solicitud con ese código.",
+                "Ya existe una solicitud con ese codigo.",
                 409
             );
 
@@ -131,7 +132,19 @@ class SolicitudService {
             ? "EN_PROCESO"
             : "PENDIENTE";
 
-        return await SolicitudRepository.crear(datos);
+        const solicitud = await SolicitudRepository.crear(datos);
+
+        // ======================================================
+        // SI TIENE CONDUCTOR ASIGNADO, CREAR SERVICIO AUTOMATICAMENTE
+        // ======================================================
+        if (datos.conductorAsignado) {
+            await ServicioService.iniciar(
+                solicitud._id.toString(),
+                datos.conductorAsignado
+            );
+        }
+
+        return solicitud;
 
     }
 
@@ -154,7 +167,7 @@ class SolicitudService {
         if (!mongoose.Types.ObjectId.isValid(id)) {
 
             throw new AppError(
-                "El id de la solicitud no es válido.",
+                "El id de la solicitud no es valido.",
                 400
             );
 
@@ -185,7 +198,7 @@ class SolicitudService {
         if (!mongoose.Types.ObjectId.isValid(id)) {
 
             throw new AppError(
-                "El id de la solicitud no es válido.",
+                "El id de la solicitud no es valido.",
                 400
             );
 
@@ -218,7 +231,7 @@ class SolicitudService {
         if (datos.conductorAsignado !== undefined) {
 
             throw new AppError(
-                "El conductor debe asignarse mediante el endpoint específico.",
+                "El conductor debe asignarse mediante el endpoint especifico.",
                 400
             );
 
@@ -238,7 +251,7 @@ class SolicitudService {
                 if (codigoExiste) {
 
                     throw new AppError(
-                        "Ya existe una solicitud con ese código.",
+                        "Ya existe una solicitud con ese codigo.",
                         409
                     );
 
@@ -278,7 +291,7 @@ class SolicitudService {
             if (!mongoose.Types.ObjectId.isValid(datos.cliente)) {
 
                 throw new AppError(
-                    "El cliente enviado no es válido.",
+                    "El cliente enviado no es valido.",
                     400
                 );
 
@@ -305,7 +318,7 @@ class SolicitudService {
             if (!mongoose.Types.ObjectId.isValid(datos.vehiculo)) {
 
                 throw new AppError(
-                    "El vehículo enviado no es válido.",
+                    "El vehiculo enviado no es valido.",
                     400
                 );
 
@@ -319,7 +332,7 @@ class SolicitudService {
             if (!vehiculo) {
 
                 throw new AppError(
-                    "El vehículo no existe.",
+                    "El vehiculo no existe.",
                     404
                 );
 
@@ -346,7 +359,7 @@ class SolicitudService {
         if (!mongoose.Types.ObjectId.isValid(solicitudId)) {
 
             throw new AppError(
-                "El id de la solicitud no es válido.",
+                "El id de la solicitud no es valido.",
                 400
             );
 
@@ -355,7 +368,7 @@ class SolicitudService {
         if (!mongoose.Types.ObjectId.isValid(conductorId)) {
 
             throw new AppError(
-                "El id del conductor no es válido.",
+                "El id del conductor no es valido.",
                 400
             );
 
@@ -404,19 +417,26 @@ class SolicitudService {
         if (!conductor.disponible) {
 
             throw new AppError(
-                "El conductor no está disponible.",
+                "El conductor no esta disponible.",
                 409
             );
 
         }
 
-        return await SolicitudRepository.asignarConductor(
+        const resultado = await SolicitudRepository.asignarConductor(
             solicitudId,
             {
                 conductorAsignado: conductorId,
                 estado: "EN_PROCESO"
             }
         );
+
+        // ======================================================
+        // CREAR SERVICIO AUTOMATICAMENTE AL ASIGNAR CONDUCTOR
+        // ======================================================
+        await ServicioService.iniciar(solicitudId, conductorId);
+
+        return resultado;
 
     }
 
@@ -429,7 +449,7 @@ class SolicitudService {
         if (!mongoose.Types.ObjectId.isValid(id)) {
 
             throw new AppError(
-                "El id de la solicitud no es válido.",
+                "El id de la solicitud no es valido.",
                 400
             );
 
@@ -459,7 +479,14 @@ class SolicitudService {
 
         }
 
-        return await SolicitudRepository.cancelar(id);
+        const resultado = await SolicitudRepository.cancelar(id);
+
+        // ======================================================
+        // CANCELAR SERVICIO ASOCIADO SI EXISTE
+        // ======================================================
+        await ServicioService.cancelar(id);
+
+        return resultado;
 
     }
 
@@ -472,7 +499,7 @@ class SolicitudService {
         if (!mongoose.Types.ObjectId.isValid(id)) {
 
             throw new AppError(
-                "El id de la solicitud no es válido.",
+                "El id de la solicitud no es valido.",
                 400
             );
 
@@ -499,7 +526,14 @@ class SolicitudService {
 
         }
 
-        return await SolicitudRepository.completar(id);
+        const resultado = await SolicitudRepository.completar(id);
+
+        // ======================================================
+        // FINALIZAR SERVICIO ASOCIADO
+        // ======================================================
+        await ServicioService.finalizar(id);
+
+        return resultado;
 
     }
 

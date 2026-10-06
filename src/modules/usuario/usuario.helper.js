@@ -8,15 +8,29 @@ class UsuarioHelper {
 
     async crear(datos, nombreRol) {
 
-        // Normalizar datos
-        datos.nombre = datos.nombre.trim();
-        datos.apellido = datos.apellido.trim();
-        datos.tipoDocumento = datos.tipoDocumento.trim().toUpperCase();
-        datos.documento = datos.documento.trim();
-        datos.correo = datos.correo.trim().toLowerCase();
-        datos.telefono = datos.telefono.trim();
+        datos.nombre =
+            datos.nombre.trim();
 
-        // Documento repetido
+        datos.apellido =
+            datos.apellido.trim();
+
+        datos.tipoDocumento =
+            datos.tipoDocumento
+                .trim()
+                .toUpperCase();
+
+        datos.documento =
+            datos.documento.trim();
+
+        datos.correo =
+            datos.correo
+                .trim()
+                .toLowerCase();
+
+        datos.telefono =
+            datos.telefono.trim();
+
+
         const documentoExiste =
             await UsuarioRepository.obtenerPorDocumento(
                 datos.documento
@@ -31,7 +45,7 @@ class UsuarioHelper {
 
         }
 
-        // Correo repetido
+
         const correoExiste =
             await UsuarioRepository.obtenerPorCorreo(
                 datos.correo
@@ -46,32 +60,42 @@ class UsuarioHelper {
 
         }
 
-        // Verificar que el rol exista
+        if (nombreRol) {
+            const rol =
+                await RolRepository.obtenerPorNombre(
+                    nombreRol
+                );
 
-        const rol = await RolRepository.obtenerPorId(
-            datos.rol
-        );
-
-        if (!rol) {
-
+            if (!rol) {
+                throw new AppError(
+                    `El rol ${nombreRol} no existe.`,
+                    404
+                );
+            }
+            datos.rol = rol._id;
+        } else if (!datos.rol) {
             throw new AppError(
-                "El rol seleccionado no existe.",
-                404
+                "No se proporcionó un rol para el usuario.",
+                400
             );
-
         }
 
-        // Encriptar contraseña
-        const salt = await bcrypt.genSalt(10);
+        const salt =
+            await bcrypt.genSalt(10);
 
-        datos.password = await bcrypt.hash(
-            datos.password,
-            salt
+        datos.password =
+            await bcrypt.hash(
+                datos.password,
+                salt
+            );
+
+
+
+        return await UsuarioRepository.crear(
+            datos
         );
-
-        return await UsuarioRepository.crear(datos);
-
     }
+
 
     async actualizar(id, datos) {
 
@@ -87,31 +111,53 @@ class UsuarioHelper {
 
         }
 
-        if (datos.nombre)
-            datos.nombre = datos.nombre.trim();
 
-        if (datos.apellido)
-            datos.apellido = datos.apellido.trim();
+        if (datos.nombre) {
 
-        if (datos.tipoDocumento)
+            datos.nombre =
+                datos.nombre.trim();
+
+        }
+
+        if (datos.apellido) {
+
+            datos.apellido =
+                datos.apellido.trim();
+
+        }
+
+        if (datos.tipoDocumento) {
+
             datos.tipoDocumento =
                 datos.tipoDocumento
                     .trim()
                     .toUpperCase();
 
-        if (datos.documento)
+        }
+
+        if (datos.documento) {
+
             datos.documento =
                 datos.documento.trim();
 
-        if (datos.correo)
+        }
+
+        if (datos.correo) {
+
             datos.correo =
                 datos.correo
                     .trim()
                     .toLowerCase();
 
-        if (datos.telefono)
+        }
+
+        if (datos.telefono) {
+
             datos.telefono =
                 datos.telefono.trim();
+
+        }
+
 
         if (
             datos.documento &&
@@ -131,8 +177,9 @@ class UsuarioHelper {
                 );
 
             }
-
         }
+
+
 
         if (
             datos.correo &&
@@ -152,8 +199,10 @@ class UsuarioHelper {
                 );
 
             }
-
         }
+
+
+       
 
         if (datos.password) {
 
@@ -168,11 +217,11 @@ class UsuarioHelper {
 
         }
 
+
         return await UsuarioRepository.actualizar(
             id,
             datos
         );
-
     }
 
     async eliminar(id) {
@@ -181,6 +230,9 @@ class UsuarioHelper {
 
     }
 
+    async eliminarFisico(id) {
+        return await UsuarioRepository.eliminarFisico(id);
+    }
 }
 
 export default new UsuarioHelper();

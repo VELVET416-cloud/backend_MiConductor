@@ -1,7 +1,6 @@
 import { z } from "zod";
 
 const crearUsuarioSchema = z.object({
-
     nombre: z
         .string({
             required_error: "El nombre es obligatorio."
@@ -23,7 +22,7 @@ const crearUsuarioSchema = z.object({
             required_error: "El tipo de documento es obligatorio."
         })
         .trim()
-        .min(2),
+        .min(2, "El tipo de documento es obligatorio."),
 
     documento: z
         .string({
@@ -55,9 +54,63 @@ const crearUsuarioSchema = z.object({
         .string({
             required_error: "El rol es obligatorio."
         })
+        .min(1, "El rol es obligatorio."),
+
+    estado: z.boolean().optional(),
 });
 
-const actualizarUsuarioSchema = crearUsuarioSchema.partial();
+const actualizarUsuarioSchema = z.object({
+    nombre: z
+        .string()
+        .trim()
+        .min(2)
+        .max(100)
+        .optional(),
+
+    apellido: z
+        .string()
+        .trim()
+        .min(2)
+        .max(100)
+        .optional(),
+
+    tipoDocumento: z
+        .string()
+        .trim()
+        .min(2)
+        .optional(),
+
+    documento: z
+        .string()
+        .trim()
+        .min(5)
+        .optional(),
+
+    correo: z
+        .string()
+        .email("Debe ingresar un correo válido.")
+        .optional(),
+
+    password: z
+        .string()
+        .min(6, "La contraseña debe tener al menos 6 caracteres.")
+        .optional(),
+
+    telefono: z
+        .string()
+        .trim()
+        .min(7)
+        .optional(),
+
+    rol: z
+        .string()
+        .min(1)
+        .optional(),
+
+    estado: z
+        .boolean()
+        .optional(),
+});
 
 export {
     crearUsuarioSchema,

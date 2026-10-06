@@ -67,7 +67,9 @@ const actualizarClienteSchema = z.object({
         .trim()
         .min(5)
         .max(200)
-        .optional()
+        .optional(),
+
+    estado: z.boolean().optional()
 
 });
 
