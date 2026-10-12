@@ -30,8 +30,8 @@ const vehiculoSchema = new mongoose.Schema(
 
         numeroChasis: {
             type: String,
-            required: [true, "El número de chasis es obligatorio."],
-            unique: true,
+            required: false,
+            default: null,
             trim: true
         },
 
@@ -54,29 +54,68 @@ const vehiculoSchema = new mongoose.Schema(
 
         numeroPuertas: {
             type: Number,
-            required: [true, "El número de puertas es obligatorio."]
+            required: false,
+            default: 4
         },
 
         tipoCombustible: {
             type: String,
-            required: [true, "El tipo de combustible es obligatorio."],
+            required: false,
+            default: "Gasolina",
             trim: true
         },
 
         estadoSeguro: {
             type: String,
-            required: [true, "El estado del seguro es obligatorio."],
+            required: false,
+            default: "Activo",
             trim: true
         },
 
         companiaAseguradora: {
             type: String,
-            required: [true, "La compañía aseguradora es obligatoria."],
+            required: false,
+            default: "N/A",
             trim: true
         },
 
         fechaRevisionTecnicoMecanica: {
             type: Date,
+            default: null
+        },
+
+        fechaVencimientoSoat: {
+            type: Date,
+            default: null
+        },
+
+        fechaVencimientoTecnomecanica: {
+            type: Date,
+            default: null
+        },
+
+        tarjetaPropiedad: {
+            type: String,
+            default: null
+        },
+
+        fotos: {
+            type: [String],
+            default: []
+        },
+
+        foto1: {
+            type: String,
+            default: null
+        },
+
+        foto2: {
+            type: String,
+            default: null
+        },
+
+        foto3: {
+            type: String,
             default: null
         },
 
