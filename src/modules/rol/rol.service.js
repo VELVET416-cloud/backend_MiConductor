@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-
+import usuarioRepository from "../usuario/usuario.repository.js";
 import rolRepository from "./rol.repository.js";
 import Permiso from "../permiso/permiso.model.js";
 import AppError from "../../utils/AppError.js";
@@ -96,24 +96,56 @@ class RolService {
                 404
             );
         }
+        // No permitir desactivar un rol que tenga usuarios activos
+        if (datos.activo === false && rol.activo === true) {
 
-        // No permitir cambiar el nombre de un rol del sistema
-        if (rol.esSistema && datos.nombre) {
+            const cantidadUsuarios =
+                await usuarioRepository.contarPorRol(id);
 
-            const nuevoNombre =
-                datos.nombre.trim().toUpperCase();
-
-            if (nuevoNombre !== rol.nombre) {
+            if (cantidadUsuarios > 0) {
 
                 throw new AppError(
-                    "No se puede cambiar el nombre de un rol del sistema.",
+                    `No se puede desactivar el rol porque tiene ${cantidadUsuarios} usuario(s) asignado(s). Reasigne los usuarios a otro rol antes de continuar.`,
+                    409
+                );
+
+            }
+        }
+
+        // No permitir modificar un rol del sistema
+        if (rol.esSistema) {
+
+            // No permitir cambiar el nombre
+            if (datos.nombre) {
+
+                const nuevoNombre =
+                    datos.nombre.trim().toUpperCase();
+
+                if (nuevoNombre !== rol.nombre) {
+
+                    throw new AppError(
+                        "No se puede cambiar el nombre de un rol del sistema.",
+                        403
+                    );
+
+                }
+
+            }
+
+            // No permitir desactivar el rol
+            if (
+                datos.activo !== undefined &&
+                datos.activo === false
+            ) {
+
+                throw new AppError(
+                    "El rol del sistema no puede desactivarse.",
                     403
                 );
 
             }
 
         }
-
         // Normalizar nombre
         if (datos.nombre) {
 
@@ -201,10 +233,10 @@ class RolService {
 
         }
 
-        if (rol.esSistema) {
+        if (datos.activo === false && rol.esSistema) {
 
             throw new AppError(
-                `El rol "${rol.nombre}" pertenece al sistema y no puede eliminarse.`,
+                `El rol "${rol.nombre}" pertenece al sistema y no puede desactivarse.`,
                 403
             );
 
