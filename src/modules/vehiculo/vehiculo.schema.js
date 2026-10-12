@@ -32,12 +32,10 @@ const crearVehiculoSchema = z.object({
         .max(10, "La placa no puede superar los 10 caracteres."),
 
     numeroChasis: z
-        .string({
-            required_error: "El número de chasis es obligatorio."
-        })
+        .string()
         .trim()
-        .min(5, "El número de chasis debe tener al menos 5 caracteres.")
-        .max(100, "El número de chasis no puede superar los 100 caracteres."),
+        .optional()
+        .nullable(),
 
     color: z
         .string({
@@ -61,37 +59,48 @@ const crearVehiculoSchema = z.object({
         .min(2, "El tipo de vehículo debe tener al menos 2 caracteres."),
 
     numeroPuertas: z
-        .number({
-            required_error: "El número de puertas es obligatorio.",
-            invalid_type_error: "El número de puertas debe ser un número."
-        }),
+        .number()
+        .optional()
+        .nullable(),
 
     tipoCombustible: z
-        .string({
-            required_error: "El tipo de combustible es obligatorio."
-        })
+        .string()
         .trim()
-        .min(2, "El tipo de combustible debe tener al menos 2 caracteres."),
+        .optional()
+        .nullable(),
 
     estadoSeguro: z
-        .string({
-            required_error: "El estado del seguro es obligatorio."
-        })
+        .string()
         .trim()
-        .min(2, "El estado del seguro debe tener al menos 2 caracteres."),
+        .optional()
+        .nullable(),
 
     companiaAseguradora: z
-        .string({
-            required_error: "La compañía aseguradora es obligatoria."
-        })
+        .string()
         .trim()
-        .min(2, "La compañía aseguradora debe tener al menos 2 caracteres."),
+        .optional()
+        .nullable(),
 
     fechaRevisionTecnicoMecanica: z
         .string()
-        .datetime({ message: "La fecha de revisión técnico-mecánica debe ser una fecha válida." })
         .optional()
         .nullable(),
+
+    fechaVencimientoSoat: z
+        .string()
+        .optional()
+        .nullable(),
+
+    fechaVencimientoTecnomecanica: z
+        .string()
+        .optional()
+        .nullable(),
+
+    tarjetaPropiedad: z.string().nullable().optional(),
+    fotos: z.array(z.string()).optional(),
+    foto1: z.string().nullable().optional(),
+    foto2: z.string().nullable().optional(),
+    foto3: z.string().nullable().optional(),
 
     gpsRastreo: z.boolean().optional(),
     airbags: z.boolean().optional(),
