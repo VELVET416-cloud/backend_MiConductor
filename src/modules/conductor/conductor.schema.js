@@ -11,6 +11,16 @@ const categoriasLicencia = [
     "C3"
 ];
 
+const licenciaItemSchema = z.object({
+    numero: z.string().trim().optional(),
+    licencia: z.string().trim().optional(),
+    categoria: z.string().trim().optional(),
+    categoriaLicencia: z.string().trim().optional(),
+    fechaExpedicion: z.coerce.date().optional().nullable(),
+    fechaVencimiento: z.coerce.date().optional().nullable(),
+    lugarExpedicion: z.string().trim().optional().nullable()
+});
+
 const conductorBaseSchema = z.object({
 
     // DATOS DEL USUARIO
@@ -46,8 +56,7 @@ const conductorBaseSchema = z.object({
     correo: z
         .string({
             required_error: "El correo es obligatorio."
-        })
-        .email(),
+        }),
 
     password: z
         .string({
@@ -75,6 +84,8 @@ const conductorBaseSchema = z.object({
     fechaExpedicion: z.coerce.date(),
 
     fechaVencimiento: z.coerce.date(),
+
+    licencias: z.array(licenciaItemSchema).optional().default([]),
 
     experiencia: z
         .number()
@@ -123,18 +134,25 @@ export const actualizarLicenciaSchema =
             .string()
             .trim()
             .min(5)
-            .max(30),
+            .max(30)
+            .optional(),
 
-        categoriaLicencia: z.enum(categoriasLicencia),
+        categoriaLicencia: z.enum(categoriasLicencia).optional(),
 
-        fechaExpedicion: z.coerce.date(),
+        fechaExpedicion: z.coerce.date().optional(),
 
-        fechaVencimiento: z.coerce.date()
+        fechaVencimiento: z.coerce.date().optional(),
+
+        licencias: z.array(licenciaItemSchema).optional()
 
     }).refine(
 
-        (data) =>
-            data.fechaVencimiento > data.fechaExpedicion,
+        (data) => {
+            if (data.fechaVencimiento && data.fechaExpedicion) {
+                return data.fechaVencimiento > data.fechaExpedicion;
+            }
+            return true;
+        },
 
         {
             message:

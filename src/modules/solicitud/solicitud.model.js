@@ -1,13 +1,28 @@
 import mongoose from "mongoose";
+import { randomBytes } from "node:crypto";
+
+const generarCodigoSolicitud = () => {
+    const fecha = new Date();
+    const fechaCodigo = [
+        fecha.getFullYear(),
+        String(fecha.getMonth() + 1).padStart(2, "0"),
+        String(fecha.getDate()).padStart(2, "0")
+    ].join("");
+
+    const aleatorio = randomBytes(4).toString("hex").toUpperCase();
+
+    return `SOL-${fechaCodigo}-${aleatorio}`;
+};
 
 const solicitudSchema = new mongoose.Schema(
     {
         codigo: {
             type: String,
-            required: [true, "El código es obligatorio."],
+            required: true,
             unique: true,
             trim: true,
-            uppercase: true
+            uppercase: true,
+            default: generarCodigoSolicitud
         },
 
         cliente: {
@@ -61,7 +76,8 @@ const solicitudSchema = new mongoose.Schema(
 
         fechaProgramada: {
             type: Date,
-            required: [true, "La fecha programada es obligatoria."]
+            required: true,
+            default: Date.now
         },
 
         prioridad: {
@@ -75,7 +91,12 @@ const solicitudSchema = new mongoose.Schema(
         estado: {
             type: String,
             required: true,
-            enum: ["PENDIENTE", "EN_PROCESO", "COMPLETADO", "CANCELADO"],
+            enum: [
+                "PENDIENTE",
+                "EN_PROCESO",
+                "COMPLETADO",
+                "CANCELADO"
+            ],
             default: "PENDIENTE",
             trim: true,
             uppercase: true
@@ -86,6 +107,8 @@ const solicitudSchema = new mongoose.Schema(
         versionKey: false
     }
 );
+
+solicitudSchema.index({ codigo: 1 }, { unique: true });
 
 const Solicitud = mongoose.model("Solicitud", solicitudSchema);
 
