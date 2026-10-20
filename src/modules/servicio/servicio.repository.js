@@ -102,6 +102,24 @@ class ServicioRepository {
         ).populate(populateServicio);
     }
 
+    async agregarImagenes(id, { imagenes = [], tipo = null }) {
+        const update = {
+            $addToSet: { imagenes: { $each: imagenes } }
+        };
+
+        if (tipo === "inicial") {
+            update.$addToSet.fotosIniciales = { $each: imagenes };
+        } else if (tipo === "entrega") {
+            update.$addToSet.fotosEntrega = { $each: imagenes };
+        }
+
+        return await Servicio.findByIdAndUpdate(
+            id,
+            update,
+            { new: true, runValidators: true }
+        ).populate(populateServicio);
+    }
+
 }
 
 export default new ServicioRepository();

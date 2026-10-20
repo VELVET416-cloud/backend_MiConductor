@@ -8,4 +8,4 @@ export const validarObtenerPorSolicitud =
     validateSchema(obtenerPorSolicitudSchema, "params");
 
 export const validarServicioId =
-    validateSchema(servicioIdSchema);
+    validateSchema(servicioIdSchema, "params");

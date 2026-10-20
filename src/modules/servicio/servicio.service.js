@@ -207,6 +207,39 @@ class ServicioService {
 
     }
 
+    // ======================================================
+    // AGREGAR IMAGENES AL SERVICIO
+    // ======================================================
+
+    async agregarImagenes(id, { imagenes = [], tipo = null }) {
+
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            throw new AppError(
+                "El id del servicio no es valido.",
+                400
+            );
+        }
+
+        const urlsValidas = Array.isArray(imagenes)
+            ? imagenes.filter((img) => typeof img === "string" && img.trim().length > 0)
+            : (typeof imagenes === "string" && imagenes.trim().length > 0 ? [imagenes.trim()] : []);
+
+        const servicio = await ServicioRepository.agregarImagenes(id, {
+            imagenes: urlsValidas,
+            tipo
+        });
+
+        if (!servicio) {
+            throw new AppError(
+                "Servicio no encontrado.",
+                404
+            );
+        }
+
+        return servicio;
+
+    }
+
 }
 
 export default new ServicioService();

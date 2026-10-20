@@ -32,6 +32,21 @@ const servicioSchema = new mongoose.Schema(
         fechaFin: {
             type: Date,
             default: null
+        },
+
+        imagenes: {
+            type: [String],
+            default: []
+        },
+
+        fotosIniciales: {
+            type: [String],
+            default: []
+        },
+
+        fotosEntrega: {
+            type: [String],
+            default: []
         }
     },
     {
