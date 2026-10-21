@@ -33,4 +33,19 @@ router.get(
     ServicioController.obtenerPorSolicitud
 );
 
+// ======================================================
+// Agregar imágenes / evidencias al servicio
+// ======================================================
+router.post(
+    "/:id/imagenes",
+    validarServicioId,
+    ServicioController.agregarImagenes
+);
+
+router.patch(
+    "/:id/imagenes",
+    validarServicioId,
+    ServicioController.agregarImagenes
+);
+
 export default router;

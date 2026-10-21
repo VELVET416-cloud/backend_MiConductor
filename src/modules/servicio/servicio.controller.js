@@ -72,6 +72,35 @@ class ServicioController {
         }
     }
 
+    // ======================================================
+    // AGREGAR IMAGENES
+    // ======================================================
+
+    async agregarImagenes(req, res, next) {
+        try {
+
+            const { id } = req.params;
+            const { imagenes, urls, tipo } = req.body;
+
+            const listaImagenes = imagenes || urls || [];
+
+            const servicio =
+                await ServicioService.agregarImagenes(id, {
+                    imagenes: listaImagenes,
+                    tipo
+                });
+
+            return successResponse(
+                res,
+                servicio,
+                "Imágenes agregadas correctamente al servicio."
+            );
+
+        } catch (error) {
+            next(error);
+        }
+    }
+
 }
 
 export default new ServicioController();
