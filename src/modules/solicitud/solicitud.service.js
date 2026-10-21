@@ -8,6 +8,7 @@ import ConductorRepository from "../conductor/conductor.repository.js";
 import VehiculoRepository from "../vehiculo/vehiculo.repository.js";
 import ServicioService from "../servicio/servicio.service.js";
 import ServicioRepository from "../servicio/servicio.repository.js";
+import { notificacionEventBus, NOTIFICACION_EVENTOS } from "../notificacion/notificacion.events.js";
 
 import AppError from "../../utils/AppError.js";
 
@@ -145,6 +146,8 @@ class SolicitudService {
                 datos.conductorAsignado
             );
         }
+
+        notificacionEventBus.emit(NOTIFICACION_EVENTOS.SOLICITUD_CREADA, solicitud);
 
         return solicitud;
     }
@@ -377,6 +380,8 @@ class SolicitudService {
         const resultado = await SolicitudRepository.cancelar(id);
 
         await ServicioService.cancelar(id);
+
+        notificacionEventBus.emit(NOTIFICACION_EVENTOS.SOLICITUD_CANCELADA, resultado || solicitud);
 
         return resultado;
     }

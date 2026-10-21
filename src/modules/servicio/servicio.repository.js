@@ -102,6 +102,40 @@ class ServicioRepository {
         ).populate(populateServicio);
     }
 
+    async agregarImagenes(id, nuevasImagenes) {
+        return await Servicio.findByIdAndUpdate(
+            id,
+            {
+                $push: {
+                    imagenes: {
+                        $each: nuevasImagenes
+                    }
+                }
+            },
+            {
+                new: true,
+                runValidators: true
+            }
+        ).populate(populateServicio);
+    }
+
+    async eliminarImagen(id, imagenId) {
+        return await Servicio.findByIdAndUpdate(
+            id,
+            {
+                $pull: {
+                    imagenes: {
+                        _id: imagenId
+                    }
+                }
+            },
+            {
+                new: true,
+                runValidators: true
+            }
+        ).populate(populateServicio);
+    }
+
 }
 
 export default new ServicioRepository();

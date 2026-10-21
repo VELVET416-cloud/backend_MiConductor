@@ -1,8 +1,11 @@
 import { Router } from "express";
 import ServicioController from "./servicio.controller.js";
+import authMiddleware from "../../middlewares/auth.middleware.js";
+import uploadImagenesMiddleware from "../../middlewares/upload.middleware.js";
 import {
     validarServicioId,
-    validarObtenerPorSolicitud
+    validarObtenerPorSolicitud,
+    validarEliminarImagenServicio
 } from "./servicio.validation.js";
 
 const router = Router();
@@ -16,12 +19,33 @@ router.get(
 );
 
 // ======================================================
-// Obtener servicio por ID
+// Subir imágenes al servicio (Cloudinary)
+// ======================================================
+router.post(
+    "/:id/imagenes",
+    authMiddleware,
+    validarServicioId,
+    uploadImagenesMiddleware("imagenes", 5),
+    ServicioController.subirImagenes
+);
+
+// ======================================================
+// Obtener imágenes de un servicio
 // ======================================================
 router.get(
-    "/:id",
+    "/:id/imagenes",
     validarServicioId,
-    ServicioController.obtenerPorId
+    ServicioController.obtenerImagenes
+);
+
+// ======================================================
+// Eliminar imagen de un servicio (Cloudinary)
+// ======================================================
+router.delete(
+    "/:id/imagenes/:imagenId",
+    authMiddleware,
+    validarEliminarImagenServicio,
+    ServicioController.eliminarImagen
 );
 
 // ======================================================
@@ -31,6 +55,25 @@ router.get(
     "/solicitud/:solicitudId",
     validarObtenerPorSolicitud,
     ServicioController.obtenerPorSolicitud
+);
+
+// ======================================================
+// Obtener servicio por ID
+// ======================================================
+router.get(
+    "/:id",
+    validarServicioId,
+    ServicioController.obtenerPorId
+);
+
+// ======================================================
+// Notificar conductor en camino
+// ======================================================
+router.patch(
+    "/:id/en-camino",
+    authMiddleware,
+    validarServicioId,
+    ServicioController.notificarEnCamino
 );
 
 export default router;
