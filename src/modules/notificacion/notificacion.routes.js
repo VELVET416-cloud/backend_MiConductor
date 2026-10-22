@@ -25,5 +25,8 @@ router.patch("/:id/leida", validarNotificacionId, NotificacionController.marcarC
 router.post("/dispositivos", validarRegistrarDispositivo, NotificacionController.registrarDispositivo);
 router.delete("/dispositivos", validarDesvincularDispositivo, NotificacionController.desvincularDispositivo);
 
+// Endpoint de prueba manual
+router.post("/test", NotificacionController.enviarPrueba);
+
 export default router;
 

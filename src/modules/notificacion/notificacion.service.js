@@ -219,6 +219,42 @@ class NotificacionService {
     }
 
     // ======================================================
+    // ENVIAR NOTIFICACIÓN DE PRUEBA
+    // ======================================================
+
+    async enviarPrueba(usuarioId, { titulo, mensaje, tipo } = {}) {
+        if (!mongoose.Types.ObjectId.isValid(usuarioId)) {
+            throw new AppError("El id del usuario no es válido.", 400);
+        }
+
+        const tituloFinal = (titulo && typeof titulo === "string") ? titulo.trim() : "Prueba de Notificación";
+        const mensajeFinal = (mensaje && typeof mensaje === "string") ? mensaje.trim() : "¡Hola! Esta es una notificación de prueba de Mi Conductor.";
+        const tipoFinal = tipo || "SISTEMA";
+
+        const notificacion = await this.crearYEnviarNotificacion({
+            destinatario: usuarioId,
+            titulo: tituloFinal,
+            mensaje: mensajeFinal,
+            tipo: tipoFinal,
+            datosExtra: { origen: "PRUEBA_MANUAL", fecha: new Date().toISOString() }
+        });
+
+        const tokens = await NotificacionRepository.obtenerTokensPorUsuario(usuarioId);
+
+        return {
+            notificacion,
+            destinatarioId: usuarioId,
+            mongoGuardado: !!notificacion,
+            socketEmitido: true,
+            dispositivosRegistrados: tokens.length,
+            firebaseConfigurado: isFirebaseConfigured(),
+            mensajeFCM: tokens.length > 0
+                ? `Despachado a ${tokens.length} token(s) FCM registrados para este usuario.`
+                : "Guardada en MongoDB y emitida por Socket.IO. Para recibir alerta push en tu celular o emulador, primero registra el token en POST /api/notificaciones/dispositivos."
+        };
+    }
+
+    // ======================================================
     // CREAR Y DISTRIBUIR NOTIFICACIÓN (BD + Push + Socket.IO)
     // ======================================================
 

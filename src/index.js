@@ -8,12 +8,14 @@ import { registerSocketEvents } from "./sockets/index.js";
 import { seedRoles } from "./seeders/rol.seeder.js";
 import { seedPermisos } from "./seeders/permiso.seeder.js";
 import { initNotificacionListeners } from "./modules/notificacion/notificacion.listener.js";
+import initFirebase from "./config/firebase.js";
 
 const startServer = async () => {
   await connectDB();
   await seedPermisos();
   await seedRoles();
 
+  initFirebase();
   initNotificacionListeners();
 
   const server = http.createServer(app);
