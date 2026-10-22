@@ -306,7 +306,7 @@ class ServicioService {
     }
 
     // ======================================================
-    // SUBIR IMÁGENES AL SERVICIO
+    // SUBIR IMÁGENES AL SERVICIO (Cloudinary multipart/form-data)
     // ======================================================
 
     async subirImagenes(servicioId, archivos, usuario = null) {
@@ -378,6 +378,47 @@ class ServicioService {
     }
 
     // ======================================================
+    // AGREGAR IMAGENES AL SERVICIO (Compatibilidad con URLs / develop)
+    // ======================================================
+
+    async agregarImagenes(id, { imagenes = [], tipo = null }) {
+
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            throw new AppError(
+                "El id del servicio no es valido.",
+                400
+            );
+        }
+
+        const servicio = await ServicioRepository.obtenerPorId(id);
+
+        if (!servicio) {
+            throw new AppError(
+                "Servicio no encontrado.",
+                404
+            );
+        }
+
+        const urlsValidas = Array.isArray(imagenes)
+            ? imagenes.filter((img) => typeof img === "string" && img.trim().length > 0)
+            : (typeof imagenes === "string" && imagenes.trim().length > 0 ? [imagenes.trim()] : []);
+
+        const imagenesFormateadas = urlsValidas.map((urlStr) => ({
+            url: urlStr,
+            public_id: `url_externa_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
+            formato: urlStr.split(".").pop()?.toLowerCase() || "jpg"
+        }));
+
+        const servicioActualizado = await ServicioRepository.agregarImagenes(id, {
+            imagenes: imagenesFormateadas,
+            tipo
+        });
+
+        return servicioActualizado;
+
+    }
+
+    // ======================================================
     // OBTENER IMÁGENES DEL SERVICIO
     // ======================================================
 
@@ -399,7 +440,7 @@ class ServicioService {
     }
 
     // ======================================================
-    // ELIMINAR IMAGEN DEL SERVICIO
+    // ELIMINAR IMAGEN DEL SERVICIO (Cloudinary + MongoDB)
     // ======================================================
 
     async eliminarImagen(servicioId, imagenId, usuario = null) {
@@ -448,14 +489,16 @@ class ServicioService {
         // Obtener el public_id EXCLUSIVAMENTE desde la base de datos verificada
         const publicId = imagen.public_id;
 
-        // Eliminar de Cloudinary antes de retirar la referencia en la base de datos
-        try {
-            await eliminarDeCloudinary(publicId);
-        } catch (error) {
-            throw new AppError(
-                `Error al eliminar la imagen de Cloudinary: ${error.message || "Fallo remoto"}. La referencia en la base de datos se mantuvo intacta.`,
-                502
-            );
+        // Eliminar de Cloudinary antes de retirar la referencia en la base de datos si no es externa
+        if (publicId && !publicId.startsWith("url_externa_")) {
+            try {
+                await eliminarDeCloudinary(publicId);
+            } catch (error) {
+                throw new AppError(
+                    `Error al eliminar la imagen de Cloudinary: ${error.message || "Fallo remoto"}. La referencia en la base de datos se mantuvo intacta.`,
+                    502
+                );
+            }
         }
 
         // Retirar la referencia de MongoDB solo tras eliminación exitosa en Cloudinary

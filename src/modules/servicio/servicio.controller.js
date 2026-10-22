@@ -73,7 +73,7 @@ class ServicioController {
     }
 
     // ======================================================
-    // SUBIR IMÁGENES AL SERVICIO
+    // SUBIR IMÁGENES AL SERVICIO (Cloudinary multipart/form-data)
     // ======================================================
 
     async subirImagenes(req, res, next) {
@@ -81,18 +81,73 @@ class ServicioController {
             const { id } = req.params;
             const archivos = req.archivosProcesados || [];
 
-            const servicio = await ServicioService.subirImagenes(
-                id,
-                archivos,
-                req.user
+            // Si se enviaron archivos multipart (Cloudinary)
+            if (archivos.length > 0) {
+                const servicio = await ServicioService.subirImagenes(
+                    id,
+                    archivos,
+                    req.user
+                );
+
+                return successResponse(
+                    res,
+                    servicio,
+                    "Imágenes subidas y asociadas correctamente al servicio.",
+                    201
+                );
+            }
+
+            // Si se enviaron URLs en el body JSON (compatibilidad con develop)
+            const { imagenes, urls, tipo } = req.body || {};
+            const listaImagenes = imagenes || urls || [];
+            if (listaImagenes.length > 0) {
+                const servicio = await ServicioService.agregarImagenes(id, {
+                    imagenes: listaImagenes,
+                    tipo
+                });
+
+                return successResponse(
+                    res,
+                    servicio,
+                    "Imágenes agregadas correctamente al servicio.",
+                    201
+                );
+            }
+
+            return successResponse(
+                res,
+                await ServicioService.obtenerPorId(id),
+                "No se proporcionaron imágenes para subir."
             );
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    // ======================================================
+    // AGREGAR IMÁGENES (Compatibilidad directa con develop)
+    // ======================================================
+
+    async agregarImagenes(req, res, next) {
+        try {
+
+            const { id } = req.params;
+            const { imagenes, urls, tipo } = req.body || {};
+
+            const listaImagenes = imagenes || urls || [];
+
+            const servicio =
+                await ServicioService.agregarImagenes(id, {
+                    imagenes: listaImagenes,
+                    tipo
+                });
 
             return successResponse(
                 res,
                 servicio,
-                "Imágenes subidas y asociadas correctamente al servicio.",
-                201
+                "Imágenes agregadas correctamente al servicio."
             );
+
         } catch (error) {
             next(error);
         }

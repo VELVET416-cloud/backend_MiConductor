@@ -63,6 +63,16 @@ const servicioSchema = new mongoose.Schema(
         imagenes: {
             type: [imagenSchema],
             default: []
+        },
+
+        fotosIniciales: {
+            type: [String],
+            default: []
+        },
+
+        fotosEntrega: {
+            type: [String],
+            default: []
         }
     },
     {

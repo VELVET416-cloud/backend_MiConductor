@@ -19,7 +19,7 @@ router.get(
 );
 
 // ======================================================
-// Subir imágenes al servicio (Cloudinary)
+// Subir imágenes al servicio (Cloudinary o URLs)
 // ======================================================
 router.post(
     "/:id/imagenes",
@@ -27,6 +27,15 @@ router.post(
     validarServicioId,
     uploadImagenesMiddleware("imagenes", 5),
     ServicioController.subirImagenes
+);
+
+// ======================================================
+// Agregar imágenes / evidencias al servicio (PATCH /develop)
+// ======================================================
+router.patch(
+    "/:id/imagenes",
+    validarServicioId,
+    ServicioController.agregarImagenes
 );
 
 // ======================================================

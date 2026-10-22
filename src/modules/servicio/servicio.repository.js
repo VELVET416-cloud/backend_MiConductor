@@ -102,16 +102,42 @@ class ServicioRepository {
         ).populate(populateServicio);
     }
 
-    async agregarImagenes(id, nuevasImagenes) {
+    async agregarImagenes(id, payload) {
+        let nuevasImagenes = [];
+        let tipo = null;
+
+        if (Array.isArray(payload)) {
+            nuevasImagenes = payload;
+        } else if (payload && typeof payload === "object") {
+            nuevasImagenes = Array.isArray(payload.imagenes) ? payload.imagenes : [];
+            tipo = payload.tipo || null;
+        }
+
+        const update = {
+            $push: {
+                imagenes: {
+                    $each: nuevasImagenes
+                }
+            }
+        };
+
+        if (tipo === "inicial" && nuevasImagenes.length > 0) {
+            const urls = nuevasImagenes.map((img) =>
+                typeof img === "object" && img.url ? img.url : String(img)
+            );
+            update.$addToSet = update.$addToSet || {};
+            update.$addToSet.fotosIniciales = { $each: urls };
+        } else if (tipo === "entrega" && nuevasImagenes.length > 0) {
+            const urls = nuevasImagenes.map((img) =>
+                typeof img === "object" && img.url ? img.url : String(img)
+            );
+            update.$addToSet = update.$addToSet || {};
+            update.$addToSet.fotosEntrega = { $each: urls };
+        }
+
         return await Servicio.findByIdAndUpdate(
             id,
-            {
-                $push: {
-                    imagenes: {
-                        $each: nuevasImagenes
-                    }
-                }
-            },
+            update,
             {
                 new: true,
                 runValidators: true
