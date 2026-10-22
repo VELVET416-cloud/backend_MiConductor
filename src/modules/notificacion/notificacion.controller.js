@@ -128,6 +128,32 @@ class NotificacionController {
         }
     }
 
+    // ======================================================
+    // ENVIAR NOTIFICACIÓN DE PRUEBA
+    // POST /api/notificaciones/test
+    // ======================================================
+    async enviarPrueba(req, res, next) {
+        try {
+            const usuarioId = req.user.id;
+            const { titulo, mensaje, tipo } = req.body || {};
+
+            const resultado = await NotificacionService.enviarPrueba(usuarioId, {
+                titulo,
+                mensaje,
+                tipo
+            });
+
+            return successResponse(
+                res,
+                resultado,
+                "Notificación de prueba enviada exitosamente.",
+                201
+            );
+        } catch (error) {
+            next(error);
+        }
+    }
+
 }
 
 export default new NotificacionController();

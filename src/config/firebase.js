@@ -31,12 +31,20 @@ const initFirebase = () => {
 
         // Opción 1: Archivo JSON de credenciales
         if (env.FIREBASE_SERVICE_ACCOUNT_PATH) {
-            const filePath = path.resolve(env.FIREBASE_SERVICE_ACCOUNT_PATH);
-            if (fs.existsSync(filePath)) {
-                const serviceAccount = JSON.parse(fs.readFileSync(filePath, "utf8"));
+            const rawPath = env.FIREBASE_SERVICE_ACCOUNT_PATH;
+            const posiblesRutas = [
+                path.resolve(rawPath),
+                path.resolve(import.meta.dirname, "../../", rawPath),
+                path.resolve(process.cwd(), "backend_MiConductor", rawPath)
+            ];
+
+            const filePathEncontrado = posiblesRutas.find(p => fs.existsSync(p));
+
+            if (filePathEncontrado) {
+                const serviceAccount = JSON.parse(fs.readFileSync(filePathEncontrado, "utf8"));
                 credential = cert(serviceAccount);
             } else {
-                console.warn(`[Firebase] Archivo de credenciales no encontrado en: ${filePath}`);
+                console.warn(`[Firebase] Archivo de credenciales no encontrado en: ${posiblesRutas[0]}`);
             }
         }
 
