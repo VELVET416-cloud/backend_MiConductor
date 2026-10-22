@@ -1,5 +1,31 @@
 import mongoose from "mongoose";
 
+const imagenSchema = new mongoose.Schema(
+    {
+        url: {
+            type: String,
+            required: [true, "La URL de la imagen es obligatoria."],
+            trim: true
+        },
+
+        public_id: {
+            type: String,
+            required: [true, "El public_id de la imagen es obligatorio."],
+            trim: true
+        },
+
+        formato: {
+            type: String,
+            trim: true,
+            lowercase: true
+        }
+    },
+    {
+        timestamps: true,
+        versionKey: false
+    }
+);
+
 const servicioSchema = new mongoose.Schema(
     {
         solicitud: {
@@ -35,7 +61,7 @@ const servicioSchema = new mongoose.Schema(
         },
 
         imagenes: {
-            type: [String],
+            type: [imagenSchema],
             default: []
         },
 

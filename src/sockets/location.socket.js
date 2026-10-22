@@ -1,4 +1,6 @@
 import SeguimientoService from "../modules/seguimiento/seguimiento.service.js";
+import ServicioRepository from "../modules/servicio/servicio.repository.js";
+import { notificacionEventBus, NOTIFICACION_EVENTOS } from "../modules/notificacion/notificacion.events.js";
 
 export const registerLocationEvents = (io) => {
 
@@ -22,6 +24,25 @@ export const registerLocationEvents = (io) => {
             if (servicioId) {
                 socket.leave(`servicio:${servicioId}`);
                 console.log(`Socket ${socket.id} salio de room servicio:${servicioId}`);
+            }
+        });
+
+        // ======================================================
+        // Conductor en camino: notificar al cliente
+        // ======================================================
+        socket.on("conductor:en_camino", async ({ servicioId }) => {
+            try {
+                if (!servicioId) return;
+
+                const servicio = await ServicioRepository.obtenerPorId(servicioId);
+                if (servicio) {
+                    notificacionEventBus.emit(NOTIFICACION_EVENTOS.CONDUCTOR_EN_CAMINO, {
+                        servicio,
+                        solicitud: servicio.solicitud
+                    });
+                }
+            } catch (error) {
+                console.error("Error en conductor:en_camino socket event:", error.message);
             }
         });
 

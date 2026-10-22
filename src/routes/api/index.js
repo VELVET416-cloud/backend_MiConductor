@@ -12,6 +12,7 @@ import novedadRoutes from "../../modules/novedad/novedad.routes.js";
 import invitadoRoutes from "../../modules/invitado/invitado.routes.js";
 import servicioRoutes from "../../modules/servicio/servicio.routes.js";
 import seguimientoRoutes from "../../modules/seguimiento/seguimiento.routes.js";
+import notificacionRoutes from "../../modules/notificacion/notificacion.routes.js";
 
 const router = Router();
 
@@ -34,5 +35,6 @@ router.use("/novedades", novedadRoutes);
 router.use("/invitado", invitadoRoutes);
 router.use("/servicios", servicioRoutes);
 router.use("/seguimientos", seguimientoRoutes);
+router.use("/notificaciones", notificacionRoutes);
 
 export default router;

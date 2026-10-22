@@ -4,6 +4,7 @@ import NovedadRepository from "./novedad.repository.js";
 import SolicitudRepository from "../solicitud/solicitud.repository.js";
 import ConductorRepository from "../conductor/conductor.repository.js";
 import UsuarioRepository from "../usuario/usuario.repository.js";
+import { notificacionEventBus, NOTIFICACION_EVENTOS } from "../notificacion/notificacion.events.js";
 
 import AppError from "../../utils/AppError.js";
 
@@ -107,7 +108,11 @@ class NovedadService {
             }
         }
 
-        return await NovedadRepository.crear(datos);
+        const novedad = await NovedadRepository.crear(datos);
+
+        notificacionEventBus.emit(NOTIFICACION_EVENTOS.NOVEDAD_REPORTADA, novedad);
+
+        return novedad;
 
     }
 

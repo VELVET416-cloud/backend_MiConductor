@@ -7,11 +7,14 @@ import { registerSocketEvents } from "./sockets/index.js";
 
 import { seedRoles } from "./seeders/rol.seeder.js";
 import { seedPermisos } from "./seeders/permiso.seeder.js";
+import { initNotificacionListeners } from "./modules/notificacion/notificacion.listener.js";
 
 const startServer = async () => {
   await connectDB();
   await seedPermisos();
-  await seedRoles()
+  await seedRoles();
+
+  initNotificacionListeners();
 
   const server = http.createServer(app);
 

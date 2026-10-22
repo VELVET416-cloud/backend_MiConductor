@@ -1,8 +1,11 @@
 import { Router } from "express";
 import ServicioController from "./servicio.controller.js";
+import authMiddleware from "../../middlewares/auth.middleware.js";
+import uploadImagenesMiddleware from "../../middlewares/upload.middleware.js";
 import {
     validarServicioId,
-    validarObtenerPorSolicitud
+    validarObtenerPorSolicitud,
+    validarEliminarImagenServicio
 } from "./servicio.validation.js";
 
 const router = Router();
@@ -16,12 +19,42 @@ router.get(
 );
 
 // ======================================================
-// Obtener servicio por ID
+// Subir imágenes al servicio (Cloudinary o URLs)
+// ======================================================
+router.post(
+    "/:id/imagenes",
+    authMiddleware,
+    validarServicioId,
+    uploadImagenesMiddleware("imagenes", 5),
+    ServicioController.subirImagenes
+);
+
+// ======================================================
+// Agregar imágenes / evidencias al servicio (PATCH /develop)
+// ======================================================
+router.patch(
+    "/:id/imagenes",
+    validarServicioId,
+    ServicioController.agregarImagenes
+);
+
+// ======================================================
+// Obtener imágenes de un servicio
 // ======================================================
 router.get(
-    "/:id",
+    "/:id/imagenes",
     validarServicioId,
-    ServicioController.obtenerPorId
+    ServicioController.obtenerImagenes
+);
+
+// ======================================================
+// Eliminar imagen de un servicio (Cloudinary)
+// ======================================================
+router.delete(
+    "/:id/imagenes/:imagenId",
+    authMiddleware,
+    validarEliminarImagenServicio,
+    ServicioController.eliminarImagen
 );
 
 // ======================================================
@@ -34,18 +67,22 @@ router.get(
 );
 
 // ======================================================
-// Agregar imágenes / evidencias al servicio
+// Obtener servicio por ID
 // ======================================================
-router.post(
-    "/:id/imagenes",
+router.get(
+    "/:id",
     validarServicioId,
-    ServicioController.agregarImagenes
+    ServicioController.obtenerPorId
 );
 
+// ======================================================
+// Notificar conductor en camino
+// ======================================================
 router.patch(
-    "/:id/imagenes",
+    "/:id/en-camino",
+    authMiddleware,
     validarServicioId,
-    ServicioController.agregarImagenes
+    ServicioController.notificarEnCamino
 );
 
 export default router;

@@ -102,21 +102,63 @@ class ServicioRepository {
         ).populate(populateServicio);
     }
 
-    async agregarImagenes(id, { imagenes = [], tipo = null }) {
+    async agregarImagenes(id, payload) {
+        let nuevasImagenes = [];
+        let tipo = null;
+
+        if (Array.isArray(payload)) {
+            nuevasImagenes = payload;
+        } else if (payload && typeof payload === "object") {
+            nuevasImagenes = Array.isArray(payload.imagenes) ? payload.imagenes : [];
+            tipo = payload.tipo || null;
+        }
+
         const update = {
-            $addToSet: { imagenes: { $each: imagenes } }
+            $push: {
+                imagenes: {
+                    $each: nuevasImagenes
+                }
+            }
         };
 
-        if (tipo === "inicial") {
-            update.$addToSet.fotosIniciales = { $each: imagenes };
-        } else if (tipo === "entrega") {
-            update.$addToSet.fotosEntrega = { $each: imagenes };
+        if (tipo === "inicial" && nuevasImagenes.length > 0) {
+            const urls = nuevasImagenes.map((img) =>
+                typeof img === "object" && img.url ? img.url : String(img)
+            );
+            update.$addToSet = update.$addToSet || {};
+            update.$addToSet.fotosIniciales = { $each: urls };
+        } else if (tipo === "entrega" && nuevasImagenes.length > 0) {
+            const urls = nuevasImagenes.map((img) =>
+                typeof img === "object" && img.url ? img.url : String(img)
+            );
+            update.$addToSet = update.$addToSet || {};
+            update.$addToSet.fotosEntrega = { $each: urls };
         }
 
         return await Servicio.findByIdAndUpdate(
             id,
             update,
-            { new: true, runValidators: true }
+            {
+                new: true,
+                runValidators: true
+            }
+        ).populate(populateServicio);
+    }
+
+    async eliminarImagen(id, imagenId) {
+        return await Servicio.findByIdAndUpdate(
+            id,
+            {
+                $pull: {
+                    imagenes: {
+                        _id: imagenId
+                    }
+                }
+            },
+            {
+                new: true,
+                runValidators: true
+            }
         ).populate(populateServicio);
     }
 
