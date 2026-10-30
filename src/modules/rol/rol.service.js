@@ -214,32 +214,35 @@ class RolService {
     async eliminar(id) {
 
         if (!mongoose.Types.ObjectId.isValid(id)) {
-
             throw new AppError(
                 "ID de rol inválido.",
                 400
             );
-
         }
 
         const rol = await rolRepository.obtenerPorId(id);
 
         if (!rol) {
-
             throw new AppError(
                 "Rol no encontrado.",
                 404
             );
-
         }
 
-        if (datos.activo === false && rol.esSistema) {
-
+        if (rol.esSistema) {
             throw new AppError(
-                `El rol "${rol.nombre}" pertenece al sistema y no puede desactivarse.`,
+                `El rol "${rol.nombre}" pertenece al sistema y no puede eliminarse.`,
                 403
             );
+        }
 
+        const cantidadUsuarios = await usuarioRepository.contarPorRol(id);
+
+        if (cantidadUsuarios > 0) {
+            throw new AppError(
+                `No se puede eliminar el rol porque tiene ${cantidadUsuarios} usuario(s) asignado(s). Reasigne los usuarios a otro rol antes de continuar.`,
+                409
+            );
         }
 
         await rolRepository.eliminar(id);

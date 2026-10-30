@@ -106,16 +106,7 @@ class RolRepository {
 
     async eliminar(id) {
 
-        return await Rol.findByIdAndUpdate(
-            id,
-            {
-                activo: false
-            },
-            {
-                new: true,
-                runValidators: true
-            }
-        );
+        return await Rol.findByIdAndDelete(id);
 
     }
 

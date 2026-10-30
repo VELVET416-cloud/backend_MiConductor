@@ -3,7 +3,12 @@ import jwt from "jsonwebtoken";
 import crypto from "crypto";
 
 import AuthRepository from "./auth.repository.js";
+import UsuarioRepository from "../usuario/usuario.repository.js";
 import EmailService from "./email.service.js";
+import {
+    normalizeTipoDocumento,
+    normalizeDocumento
+} from "../cliente/cliente.schema.js";
 
 import AppError from "../../utils/AppError.js";
 import { env } from "../../config/env.js";
@@ -11,12 +16,17 @@ import { env } from "../../config/env.js";
 class AuthService {
 
     async login(datos) {
+        const correo = (datos.correo || "").trim().toLowerCase();
+        const password = datos.password || "";
 
-        const correo =
-            datos.correo.trim().toLowerCase();
+        if (!correo || !password) {
+            throw new AppError(
+                "El correo y la contraseña son obligatorios.",
+                400
+            );
+        }
 
-        const usuario =
-            await AuthRepository.obtenerPorCorreo(correo);
+        const usuario = await AuthRepository.obtenerPorCorreo(correo);
 
         if (!usuario) {
             throw new AppError(
@@ -25,11 +35,10 @@ class AuthService {
             );
         }
 
-        const passwordCorrecta =
-            await bcrypt.compare(
-                datos.password,
-                usuario.password
-            );
+        const passwordCorrecta = await bcrypt.compare(
+            password,
+            usuario.password
+        );
 
         if (!passwordCorrecta) {
             throw new AppError(
@@ -46,22 +55,24 @@ class AuthService {
         }
 
         const token = jwt.sign(
-            {
-                id: usuario._id
-            },
+            { id: usuario._id },
             env.JWT_SECRET,
-            {
-                expiresIn: "8h"
-            }
+            { expiresIn: "8h" }
         );
 
-        return {
-            token
-        };
+        return { token };
     }
 
     async mobileLogin(datos) {
-        const correo = datos.correo.trim().toLowerCase();
+        const correo = (datos.correo || "").trim().toLowerCase();
+        const password = datos.password || "";
+
+        if (!correo || !password) {
+            throw new AppError(
+                "El correo y la contraseña son obligatorios.",
+                400
+            );
+        }
 
         const usuario = await AuthRepository.obtenerPorCorreo(correo);
 
@@ -73,7 +84,7 @@ class AuthService {
         }
 
         const passwordCorrecta = await bcrypt.compare(
-            datos.password,
+            password,
             usuario.password
         );
 
@@ -111,65 +122,52 @@ class AuthService {
         };
     }
 
-
-    async forgotPassword(datos) {
-
-        const correo =
-            datos.correo.trim().toLowerCase();
-
-        const usuario =
-            await AuthRepository.obtenerPorCorreo(correo);
-
-        if (!usuario) {
-            return;
+    async checkEmail(correo) {
+        if (!correo || !String(correo).trim()) {
+            throw new AppError("El correo es obligatorio.", 400);
         }
-
-        const token =
-            crypto.randomBytes(32).toString("hex");
-
-        const expiracion =
-            new Date(
-                Date.now() + 15 * 60 * 1000
-            );
-
-        await AuthRepository.guardarTokenRecuperacion(
-            usuario._id,
-            token,
-            expiracion
-        );
-
-        await EmailService.enviarCorreoRecuperacion(
-            usuario.correo,
-            usuario.nombre,
-            token,
-            datos.origen
-        );
-
-        usuario.ultimoAcceso = new Date();
-        await usuario.save();
-
+        const correoNormalizado = String(correo).trim().toLowerCase();
+        const usuario = await UsuarioRepository.obtenerPorCorreo(correoNormalizado);
+        return {
+            exists: Boolean(usuario),
+            available: !usuario
+        };
     }
 
+    async checkDocument(documento, tipoDocumento) {
+        if (!documento || !String(documento).trim()) {
+            throw new AppError("El documento es obligatorio.", 400);
+        }
+        const tipoNormalizado = tipoDocumento ? normalizeTipoDocumento(tipoDocumento) : undefined;
+        const documentoNormalizado = normalizeDocumento(documento, tipoNormalizado || "CC");
+        const usuario = await UsuarioRepository.obtenerPorDocumento(
+            documentoNormalizado,
+            tipoNormalizado
+        );
+        return {
+            exists: Boolean(usuario),
+            available: !usuario
+        };
+    }
 
     async forgotPassword(datos) {
+        const correo = (datos.correo || "").trim().toLowerCase();
 
-        const correo =
-            datos.correo.trim().toLowerCase();
-
-        const usuario =
-            await AuthRepository.obtenerPorCorreo(correo);
-
-        if (!usuario) {
-            return;
+        if (!correo) {
+            throw new AppError("El correo es obligatorio.", 400);
         }
 
-        const token =
-            crypto.randomBytes(32).toString("hex");
+        const usuario = await AuthRepository.obtenerPorCorreo(correo);
 
-        const expiracion =
-            new Date(
-                Date.now() + 15 * 60 * 1000
+        if (!usuario) {
+            throw new AppError(
+                "El correo electrónico ingresado no se encuentra registrado.",
+                404
             );
+        }
+
+        const token = crypto.randomBytes(32).toString("hex");
+        const expiracion = new Date(Date.now() + 15 * 60 * 1000);
 
         await AuthRepository.guardarTokenRecuperacion(
             usuario._id,
@@ -177,78 +175,161 @@ class AuthService {
             expiracion
         );
 
-        await EmailService.enviarCorreoRecuperacion(
-            usuario.correo,
-            usuario.nombre,
-            token
-        );
+        try {
+            await EmailService.enviarCorreoRecuperacion(
+                usuario.correo,
+                usuario.nombre,
+                token,
+                datos.origen
+            );
+        } catch (_) {
+            await AuthRepository.guardarTokenRecuperacion(
+                usuario._id,
+                null,
+                null
+            ).catch(() => {});
 
+            throw new AppError(
+                "No fue posible enviar el correo de recuperación en este momento. Intenta nuevamente.",
+                500
+            );
+        }
     }
 
     async resetPassword(datos) {
-
-        const usuario =
-            await AuthRepository.obtenerPorTokenRecuperacion(
-                datos.token
-            );
+        const usuario = await AuthRepository.obtenerPorTokenRecuperacion(
+            datos.token
+        );
 
         if (!usuario) {
-
             throw new AppError(
                 "El enlace de recuperación no es válido o ha expirado.",
                 400
             );
-
         }
 
-        const salt =
-            await bcrypt.genSalt(10);
-
-        const passwordHash =
-            await bcrypt.hash(
-                datos.password,
-                salt
-            );
+        const salt = await bcrypt.genSalt(10);
+        const passwordHash = await bcrypt.hash(
+            datos.password,
+            salt
+        );
 
         await AuthRepository.actualizarPassword(
             usuario._id,
             passwordHash
         );
-
     }
 
-    async resetPassword(datos) {
+    verificarPropiedadCuenta(authUser, datos = {}) {
+        if (!authUser || !authUser.id) {
+            throw new AppError("Usuario no autenticado.", 401);
+        }
 
-    const usuario =
-        await AuthRepository.obtenerPorTokenRecuperacion(
-            datos.token
-        );
+        const targetId =
+            datos.usuarioId ??
+            datos.userId ??
+            datos.id ??
+            datos._id;
 
-    if (!usuario) {
+        if (
+            targetId !== undefined &&
+            targetId !== null &&
+            String(targetId).trim() !== "" &&
+            String(targetId).trim() !== String(authUser.id)
+        ) {
+            throw new AppError(
+                "No tiene autorización para cambiar la contraseña de otra cuenta.",
+                403
+            );
+        }
 
-        throw new AppError(
-            "El enlace de recuperación no es válido o ha expirado.",
-            400
-        );
-
+        if (
+            datos.correo !== undefined &&
+            datos.correo !== null &&
+            String(datos.correo).trim() !== "" &&
+            authUser.correo &&
+            String(datos.correo).trim().toLowerCase() !==
+                String(authUser.correo).trim().toLowerCase()
+        ) {
+            throw new AppError(
+                "No tiene autorización para cambiar la contraseña de otra cuenta.",
+                403
+            );
+        }
     }
 
-    const salt =
-        await bcrypt.genSalt(10);
+    async changePassword(authUser, datos) {
+        this.verificarPropiedadCuenta(authUser, datos);
 
-    const passwordHash =
-        await bcrypt.hash(
-            datos.password,
+        const rolesPermitidos = ["CLIENTE", "CONDUCTOR", "ADMINISTRADOR"];
+        if (!authUser.rol || !rolesPermitidos.includes(authUser.rol)) {
+            throw new AppError(
+                "No tiene permisos para realizar esta acción.",
+                403
+            );
+        }
+
+        const currentPassword = datos.currentPassword || "";
+        const newPassword = datos.newPassword || "";
+        const confirmPassword = datos.confirmPassword;
+
+        if (!currentPassword || !currentPassword.trim()) {
+            throw new AppError("La contraseña actual es obligatoria.", 400);
+        }
+
+        if (!newPassword || !newPassword.trim()) {
+            throw new AppError("La nueva contraseña es obligatoria.", 400);
+        }
+
+        if (newPassword.length < 6) {
+            throw new AppError(
+                "La nueva contraseña debe tener mínimo 6 caracteres.",
+                400
+            );
+        }
+
+        if (confirmPassword !== undefined && newPassword !== confirmPassword) {
+            throw new AppError("Las contraseñas no coinciden.", 400);
+        }
+
+        const usuario = await AuthRepository.obtenerPorIdConPassword(
+            authUser.id
+        );
+
+        if (!usuario) {
+            throw new AppError("Usuario no encontrado.", 404);
+        }
+
+        if (!usuario.rol || !rolesPermitidos.includes(usuario.rol.nombre)) {
+            throw new AppError(
+                "No tiene permisos para realizar esta acción.",
+                403
+            );
+        }
+
+        const passwordCorrecta = await bcrypt.compare(
+            currentPassword,
+            usuario.password
+        );
+
+        if (!passwordCorrecta) {
+            throw new AppError(
+                "La contraseña actual es incorrecta.",
+                400
+            );
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        const passwordHash = await bcrypt.hash(
+            newPassword,
             salt
         );
 
-    await AuthRepository.actualizarPassword(
-        usuario._id,
-        passwordHash
-    );
-
-}
-
+        await AuthRepository.actualizarPassword(
+            usuario._id,
+            passwordHash
+        );
+    }
 }
 
 export default new AuthService();
