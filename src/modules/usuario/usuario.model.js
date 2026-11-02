@@ -17,6 +17,10 @@ const usuarioSchema = new mongoose.Schema(
         tipoDocumento: {
             type: String,
             required: [true, "El tipo de documento es obligatorio."],
+            enum: {
+                values: ["CC", "TI", "CE", "PPT", "PA", "PAS", "PASAPORTE"],
+                message: "Tipo de documento no válido. Debe ser CC, TI, CE, PPT o Pasaporte."
+            },
             uppercase: true,
             trim: true
         },
@@ -77,6 +81,8 @@ const usuarioSchema = new mongoose.Schema(
     }
 );
 
+usuarioSchema.index({ tipoDocumento: 1, documento: 1 }, { unique: true });
+
 const Usuario = mongoose.model("Usuario", usuarioSchema);
 
-export default Usuario; 
+export default Usuario;

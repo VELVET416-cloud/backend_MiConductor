@@ -29,10 +29,21 @@ class UsuarioRepository {
         });
     }
 
-    // Obtener usuario por documento
-    async obtenerPorDocumento(documento) {
+    // Obtener usuario por documento (comprobando combinación de tipo y número de documento y unicidad general)
+    async obtenerPorDocumento(documento, tipoDocumento) {
+        const docNormalizado = (documento || "").toString().trim();
+        if (tipoDocumento) {
+            const tipoNormalizado = tipoDocumento.toString().trim().toUpperCase();
+            const porTipoYDocumento = await Usuario.findOne({
+                tipoDocumento: tipoNormalizado,
+                documento: docNormalizado
+            });
+            if (porTipoYDocumento) {
+                return porTipoYDocumento;
+            }
+        }
         return await Usuario.findOne({
-            documento
+            documento: docNormalizado
         });
     }
 
@@ -83,4 +94,3 @@ class UsuarioRepository {
 }
 
 export default new UsuarioRepository();
-
