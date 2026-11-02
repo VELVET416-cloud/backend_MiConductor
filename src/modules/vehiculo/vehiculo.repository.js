@@ -11,17 +11,40 @@ class VehiculoRepository {
 
         let filter = {};
 
-        if (estado !== undefined && estado !== '') {
-            filter.estado = estado === 'true';
+        // Manejo de filtro por estado
+        if (estado === 'vendido') {
+            filter.estadoVehiculo = 'vendido';
+        } else if (estado === 'en_mantenimiento') {
+            filter.estadoVehiculo = 'en_mantenimiento';
+        } else if (estado === 'inactivo' || estado === 'false') {
+            filter.$or = [
+                { estadoVehiculo: 'inactivo' },
+                { estado: false, estadoVehiculo: { $nin: ['vendido', 'en_mantenimiento'] } }
+            ];
+        } else if (estado === 'activo' || estado === 'true') {
+            filter.$or = [
+                { estadoVehiculo: 'activo' },
+                { estado: true, estadoVehiculo: { $exists: false } }
+            ];
+        } else {
+            // Por defecto: NO listar los vehículos vendidos
+            filter.estadoVehiculo = { $ne: 'vendido' };
         }
 
         if (search && search.trim() !== '') {
             const q = new RegExp(search.trim(), 'i');
-            filter.$or = [
-                { placa: q },
-                { marca: q },
-                { modelo: q }
-            ];
+            const searchCondition = {
+                $or: [
+                    { placa: q },
+                    { marca: q },
+                    { modelo: q }
+                ]
+            };
+            if (filter.$or) {
+                filter = { $and: [filter, searchCondition] };
+            } else {
+                Object.assign(filter, searchCondition);
+            }
         }
 
         const [rows, total] = await Promise.all([
@@ -73,13 +96,61 @@ class VehiculoRepository {
     async obtenerPorCliente(clienteId) {
         return await Vehiculo.find({
             cliente: clienteId,
+            estadoVehiculo: { $ne: 'vendido' },
             estado: true
         });
     }
 
     async obtenerPorPlaca(placa) {
         return await Vehiculo.findOne({
-            placa
+            placa: placa.toUpperCase()
+        }).populate({
+            path: "cliente",
+            populate: {
+                path: "usuario",
+                select: "-password",
+                populate: {
+                    path: "rol",
+                    select: "nombre descripcion"
+                }
+            }
+        });
+    }
+
+    async cambiarEstado(id, { estadoNuevo, motivo, estadoAnterior }) {
+        const estadoBoolean = estadoNuevo === 'activo' || estadoNuevo === 'en_mantenimiento';
+
+        return await Vehiculo.findByIdAndUpdate(
+            id,
+            {
+                $set: {
+                    estadoVehiculo: estadoNuevo,
+                    motivoCambioEstado: motivo || null,
+                    estado: estadoBoolean
+                },
+                $push: {
+                    historialEstados: {
+                        estadoAnterior: estadoAnterior || null,
+                        estadoNuevo: estadoNuevo,
+                        motivo: motivo || null,
+                        fecha: new Date()
+                    }
+                }
+            },
+            {
+                new: true,
+                runValidators: true
+            }
+        ).populate({
+            path: "cliente",
+            populate: {
+                path: "usuario",
+                select: "-password",
+                populate: {
+                    path: "rol",
+                    select: "nombre descripcion"
+                }
+            }
         });
     }
 

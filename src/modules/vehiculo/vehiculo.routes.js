@@ -4,7 +4,8 @@ import VehiculoController from "./vehiculo.controller.js";
 
 import {
     crearVehiculoSchema,
-    actualizarVehiculoSchema
+    actualizarVehiculoSchema,
+    cambiarEstadoVehiculoSchema
 } from "./vehiculo.schema.js";
 
 import validateSchema from "../../middlewares/validateSchema.js";
@@ -24,6 +25,12 @@ router.get(
     VehiculoController.obtenerTodos
 );
 
+// Verificar disponibilidad de placa (ANTES de /:id para evitar colisiones)
+router.get(
+    "/verificar-placa/:placa",
+    VehiculoController.verificarPlaca
+);
+
 // Obtener vehículos de un cliente
 router.get(
     "/cliente/:clienteId",
@@ -34,6 +41,19 @@ router.get(
 router.get(
     "/:id",
     VehiculoController.obtenerPorId
+);
+
+// Cambiar estado del vehículo
+router.patch(
+    "/:id/estado",
+    validateSchema(cambiarEstadoVehiculoSchema),
+    VehiculoController.cambiarEstado
+);
+
+router.put(
+    "/:id/estado",
+    validateSchema(cambiarEstadoVehiculoSchema),
+    VehiculoController.cambiarEstado
 );
 
 // Actualizar vehículo
