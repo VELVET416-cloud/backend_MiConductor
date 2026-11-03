@@ -68,7 +68,7 @@ class ClienteService {
                 const info = await EmailService.enviarBienvenida({
                     correo: datos.correo,
                     nombre: `${datos.nombre} ${datos.apellido}`.trim(),
-                    usuario: datos.documento,
+                    usuario: datos.correo,
                     clave: datos.password,
                 });
                 console.log(`[EmailService] ✓ Correo de bienvenida enviado a ${datos.correo} (ID: ${info?.messageId})`);
