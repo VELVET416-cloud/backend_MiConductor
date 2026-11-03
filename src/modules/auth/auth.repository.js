@@ -36,6 +36,24 @@ class AuthRepository {
 
     }
 
+    async obtenerPorIdConPassword(id) {
+
+        return await Usuario.findOne({
+            _id: id,
+            estado: true
+        })
+            .select("+password")
+            .populate({
+                path: "rol",
+                select: "nombre permisos",
+                populate: {
+                    path: "permisos",
+                    select: "codigo"
+                }
+            });
+
+    }
+
     async guardarTokenRecuperacion(id, token, expiracion) {
 
         return await Usuario.findByIdAndUpdate(

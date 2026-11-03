@@ -3,6 +3,12 @@ import bcrypt from "bcrypt";
 import UsuarioRepository from "./usuario.repository.js";
 import RolRepository from "../rol/rol.repository.js";
 import AppError from "../../utils/AppError.js";
+import {
+    normalizeTipoDocumento,
+    normalizeDocumento,
+    validateTipoDocumentoValue,
+    validateDocumentoPorTipo
+} from "../cliente/cliente.schema.js";
 
 class UsuarioHelper {
 
@@ -15,12 +21,20 @@ class UsuarioHelper {
             datos.apellido.trim();
 
         datos.tipoDocumento =
-            datos.tipoDocumento
-                .trim()
-                .toUpperCase();
+            normalizeTipoDocumento(datos.tipoDocumento);
 
         datos.documento =
-            datos.documento.trim();
+            normalizeDocumento(datos.documento, datos.tipoDocumento);
+
+        const tipoError = validateTipoDocumentoValue(datos.tipoDocumento);
+        if (tipoError) {
+            throw new AppError(tipoError, 400);
+        }
+
+        const docError = validateDocumentoPorTipo(datos.documento, datos.tipoDocumento);
+        if (docError) {
+            throw new AppError(docError, 400);
+        }
 
         datos.correo =
             datos.correo
@@ -33,7 +47,8 @@ class UsuarioHelper {
 
         const documentoExiste =
             await UsuarioRepository.obtenerPorDocumento(
-                datos.documento
+                datos.documento,
+                datos.tipoDocumento
             );
 
         if (documentoExiste) {
@@ -129,17 +144,32 @@ class UsuarioHelper {
         if (datos.tipoDocumento) {
 
             datos.tipoDocumento =
-                datos.tipoDocumento
-                    .trim()
-                    .toUpperCase();
+                normalizeTipoDocumento(datos.tipoDocumento);
+
+            const tipoErr = validateTipoDocumentoValue(datos.tipoDocumento);
+            if (tipoErr) {
+                throw new AppError(tipoErr, 400);
+            }
 
         }
+
+        const tipoEfectivo = datos.tipoDocumento || usuario.tipoDocumento;
 
         if (datos.documento) {
 
             datos.documento =
-                datos.documento.trim();
+                normalizeDocumento(datos.documento, tipoEfectivo);
 
+            const docErr = validateDocumentoPorTipo(datos.documento, tipoEfectivo);
+            if (docErr) {
+                throw new AppError(docErr, 400);
+            }
+
+        } else if (datos.tipoDocumento && datos.tipoDocumento !== usuario.tipoDocumento) {
+            const docErr = validateDocumentoPorTipo(usuario.documento, datos.tipoDocumento);
+            if (docErr) {
+                throw new AppError(docErr, 400);
+            }
         }
 
         if (datos.correo) {
@@ -160,16 +190,17 @@ class UsuarioHelper {
 
 
         if (
-            datos.documento &&
-            datos.documento !== usuario.documento
+            (datos.documento && datos.documento !== usuario.documento) ||
+            (datos.tipoDocumento && datos.tipoDocumento !== usuario.tipoDocumento)
         ) {
-
+            const docVerificar = datos.documento || usuario.documento;
             const existe =
                 await UsuarioRepository.obtenerPorDocumento(
-                    datos.documento
+                    docVerificar,
+                    tipoEfectivo
                 );
 
-            if (existe) {
+            if (existe && existe._id.toString() !== usuario._id.toString()) {
 
                 throw new AppError(
                     "Ya existe un usuario con ese documento.",
@@ -201,8 +232,6 @@ class UsuarioHelper {
             }
         }
 
-
-       
 
         if (datos.password) {
 
