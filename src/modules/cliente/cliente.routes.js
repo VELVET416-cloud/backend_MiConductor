@@ -30,6 +30,12 @@ router.get(
     ClienteController.obtenerLista
 );
 
+// Obtener cliente por ID de Usuario (Para app móvil y sincronización)
+router.get(
+    "/usuario/:usuarioId",
+    ClienteController.obtenerPorUsuario
+);
+
 // Obtener cliente por ID
 router.get(
     "/:id",
