@@ -6,6 +6,7 @@ import {
     crearConductorSchema,
     actualizarConductorSchema,
     cambiarDisponibilidadSchema,
+    cambiarEstadoAdministrativoSchema,
     actualizarLicenciaSchema
 } from "./conductor.schema.js";
 
@@ -29,8 +30,6 @@ router.get(
     ConductorController.obtenerDisponibles
 );
 
-
-
 router.get(
     "/usuario/:usuarioId",
     ConductorController.obtenerPorUsuario
@@ -45,6 +44,12 @@ router.patch(
     "/:id/disponibilidad",
     validateSchema(cambiarDisponibilidadSchema),
     ConductorController.cambiarDisponibilidad
+);
+
+router.patch(
+    "/:id/estado-administrativo",
+    validateSchema(cambiarEstadoAdministrativoSchema),
+    ConductorController.cambiarEstadoAdministrativo
 );
 
 router.patch(

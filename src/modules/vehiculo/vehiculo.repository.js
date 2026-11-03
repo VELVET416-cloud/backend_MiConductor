@@ -84,6 +84,7 @@ class VehiculoRepository {
     }
 
     async obtenerPorChasis(numeroChasis) {
+        if (!numeroChasis) return null;
         return await Vehiculo.findOne({
             numeroChasis
         });

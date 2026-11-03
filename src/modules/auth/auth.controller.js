@@ -120,6 +120,25 @@ class AuthController {
             next(error);
         }
     }
+
+    async verifyActivationToken(req, res, next) {
+        try {
+            const token = req.query.token;
+            const resultado = await AuthService.verifyActivationToken(token);
+            return successResponse(res, resultado, "Token de activación válido.");
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    async activateAccount(req, res, next) {
+        try {
+            const resultado = await AuthService.activateAccount(req.body);
+            return successResponse(res, resultado, resultado.mensaje || "Cuenta activada exitosamente.");
+        } catch (error) {
+            next(error);
+        }
+    }
 }
 
 export default new AuthController();

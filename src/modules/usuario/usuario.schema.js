@@ -8,23 +8,15 @@ import {
 
 const crearUsuarioSchema = z
     .object({
-        nombre: z
-            .string({
-                required_error: "El nombre es obligatorio.",
-                error: "El nombre es obligatorio."
-            })
-            .trim()
-            .min(2, "El nombre debe tener al menos 2 caracteres.")
-            .max(100, "El nombre no puede superar los 100 caracteres."),
+        nombreCompleto: z.string().optional(),
 
-        apellido: z
-            .string({
-                required_error: "El apellido es obligatorio.",
-                error: "El apellido es obligatorio."
-            })
-            .trim()
-            .min(2, "El apellido debe tener al menos 2 caracteres.")
-            .max(100, "El apellido no puede superar los 100 caracteres."),
+        nombre: z.string().trim().optional(),
+
+        apellido: z.string().trim().optional(),
+
+        fechaNacimiento: z.string().optional().nullable(),
+
+        edad: z.union([z.number(), z.string()]).optional().nullable(),
 
         tipoDocumento: z
             .string({
@@ -53,12 +45,7 @@ const crearUsuarioSchema = z
             .trim()
             .email("Debe ingresar un correo válido."),
 
-        password: z
-            .string({
-                required_error: "La contraseña es obligatoria.",
-                error: "La contraseña es obligatoria."
-            })
-            .min(6, "La contraseña debe tener al menos 6 caracteres."),
+        password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres.").optional(),
 
         telefono: z
             .string({
@@ -78,6 +65,28 @@ const crearUsuarioSchema = z
         estado: z.boolean().optional(),
     })
     .superRefine((data, ctx) => {
+        let nombre = data.nombre;
+        let apellido = data.apellido;
+        if (data.nombreCompleto && (!nombre || !apellido)) {
+            const parts = data.nombreCompleto.trim().split(/\s+/);
+            nombre = parts[0] || "";
+            apellido = parts.slice(1).join(" ") || parts[0] || "";
+        }
+        if (!nombre || nombre.length < 2) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["nombreCompleto"],
+                message: "El nombre debe tener al menos 2 caracteres."
+            });
+        }
+        if (!apellido || apellido.length < 2) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["nombreCompleto"],
+                message: "Debe ingresar al menos un apellido."
+            });
+        }
+
         const tipoNorm = normalizeTipoDocumento(data.tipoDocumento);
         if (!ALLOWED_DOCUMENT_TYPES.includes(tipoNorm)) {
             return;
@@ -94,8 +103,17 @@ const crearUsuarioSchema = z
     .transform((data) => {
         const tipoDocumento = normalizeTipoDocumento(data.tipoDocumento);
         const documento = normalizeDocumento(data.documento, tipoDocumento);
+        let nombre = data.nombre;
+        let apellido = data.apellido;
+        if (data.nombreCompleto && (!nombre || !apellido)) {
+            const parts = data.nombreCompleto.trim().split(/\s+/);
+            nombre = parts[0] || "";
+            apellido = parts.slice(1).join(" ") || parts[0] || "";
+        }
         return {
             ...data,
+            nombre,
+            apellido,
             tipoDocumento,
             documento,
             correo: data.correo.trim().toLowerCase()
@@ -104,6 +122,8 @@ const crearUsuarioSchema = z
 
 const actualizarUsuarioSchema = z
     .object({
+        nombreCompleto: z.string().optional(),
+
         nombre: z
             .string()
             .trim()
@@ -117,6 +137,10 @@ const actualizarUsuarioSchema = z
             .min(2)
             .max(100)
             .optional(),
+
+        fechaNacimiento: z.string().optional().nullable(),
+
+        edad: z.union([z.number(), z.string()]).optional().nullable(),
 
         tipoDocumento: z
             .string()

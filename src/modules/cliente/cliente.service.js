@@ -1,3 +1,4 @@
+import EmailService from "../auth/email.service.js";
 import mongoose from "mongoose";
 
 import ClienteRepository from "./cliente.repository.js";
@@ -51,6 +52,18 @@ class ClienteService {
                 usuario: usuario._id,
                 direccion: datos.direccion
             });
+
+            // Enviar correo al cliente con sus credenciales de acceso
+            try {
+                await EmailService.enviarCredencialesNuevoUsuario({
+                    correo: usuario.correo,
+                    nombre: `${usuario.nombre || ""} ${usuario.apellido || ""}`.trim(),
+                    password: usuario.plainPassword,
+                    rol: "Cliente"
+                });
+            } catch (mailErr) {
+                console.error("[ClienteService] Error enviando correo:", mailErr.message);
+            }
 
             return await ClienteRepository.obtenerPorId(
                 cliente._id

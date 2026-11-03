@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import bcrypt from "bcrypt";
 
 import UsuarioRepository from "./usuario.repository.js";
@@ -13,6 +14,12 @@ import {
 class UsuarioHelper {
 
     async crear(datos, nombreRol) {
+
+        if (datos.nombreCompleto && (!datos.nombre || !datos.apellido)) {
+            const parts = datos.nombreCompleto.trim().split(/\s+/);
+            datos.nombre = parts[0] || "";
+            datos.apellido = parts.slice(1).join(" ") || parts[0] || "";
+        }
 
         datos.nombre =
             datos.nombre.trim();
@@ -40,6 +47,13 @@ class UsuarioHelper {
             datos.correo
                 .trim()
                 .toLowerCase();
+
+        if (datos.fechaNacimiento) {
+            datos.fechaNacimiento = new Date(datos.fechaNacimiento);
+        }
+        if (datos.edad !== undefined && datos.edad !== null && datos.edad !== "") {
+            datos.edad = Number(datos.edad);
+        }
 
         datos.telefono =
             datos.telefono.trim();
@@ -179,6 +193,13 @@ class UsuarioHelper {
                     .trim()
                     .toLowerCase();
 
+        }
+
+        if (datos.fechaNacimiento !== undefined) {
+            datos.fechaNacimiento = datos.fechaNacimiento ? new Date(datos.fechaNacimiento) : null;
+        }
+        if (datos.edad !== undefined) {
+            datos.edad = (datos.edad !== null && datos.edad !== "") ? Number(datos.edad) : null;
         }
 
         if (datos.telefono) {

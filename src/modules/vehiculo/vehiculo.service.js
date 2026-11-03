@@ -14,7 +14,11 @@ class VehiculoService {
         datos.marca = datos.marca.trim();
         datos.modelo = datos.modelo.trim();
         datos.placa = datos.placa.trim().toUpperCase();
-        datos.numeroChasis = datos.numeroChasis.trim().toUpperCase();
+        if (datos.numeroChasis && typeof datos.numeroChasis === "string" && datos.numeroChasis.trim() !== "") {
+            datos.numeroChasis = datos.numeroChasis.trim().toUpperCase();
+        } else {
+            datos.numeroChasis = null;
+        }
         datos.color = datos.color.trim();
 
         // Validar cliente
@@ -57,17 +61,19 @@ class VehiculoService {
             );
         }
 
-        // Validar chasis
-        const chasisExiste =
-            await VehiculoRepository.obtenerPorChasis(
-                datos.numeroChasis
-            );
+        // Validar chasis (solo si fue proporcionado)
+        if (datos.numeroChasis) {
+            const chasisExiste =
+                await VehiculoRepository.obtenerPorChasis(
+                    datos.numeroChasis
+                );
 
-        if (chasisExiste) {
-            throw new AppError(
-                "Ya existe un vehículo con ese número de chasis.",
-                409
-            );
+            if (chasisExiste) {
+                throw new AppError(
+                    "Ya existe un vehículo con ese número de chasis.",
+                    409
+                );
+            }
         }
 
         return await VehiculoRepository.crear(datos);
@@ -190,28 +196,26 @@ class VehiculoService {
 
         }
 
-        if (datos.numeroChasis) {
+        if (datos.numeroChasis !== undefined) {
+            if (datos.numeroChasis && typeof datos.numeroChasis === "string" && datos.numeroChasis.trim() !== "") {
+                datos.numeroChasis = datos.numeroChasis.trim().toUpperCase();
 
-            datos.numeroChasis = datos.numeroChasis
-                .trim()
-                .toUpperCase();
+                if (datos.numeroChasis !== vehiculo.numeroChasis) {
+                    const chasisExiste =
+                        await VehiculoRepository.obtenerPorChasis(
+                            datos.numeroChasis
+                        );
 
-            if (datos.numeroChasis !== vehiculo.numeroChasis) {
-
-                const chasisExiste =
-                    await VehiculoRepository.obtenerPorChasis(
-                        datos.numeroChasis
-                    );
-
-                if (chasisExiste) {
-                    throw new AppError(
-                        "Ya existe un vehículo con ese número de chasis.",
-                        409
-                    );
+                    if (chasisExiste) {
+                        throw new AppError(
+                            "Ya existe un vehículo con ese número de chasis.",
+                            409
+                        );
+                    }
                 }
-
+            } else {
+                datos.numeroChasis = null;
             }
-
         }
 
         return await VehiculoRepository.actualizar(

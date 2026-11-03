@@ -144,9 +144,33 @@ class AuthService {
             documentoNormalizado,
             tipoNormalizado
         );
+
+        let esConductor = false;
+        if (usuario) {
+            try {
+                const { default: ConductorRepository } = await import("../conductor/conductor.repository.js");
+                const cond = await ConductorRepository.obtenerPorUsuario(usuario._id);
+                esConductor = Boolean(cond);
+            } catch {
+                esConductor = false;
+            }
+        }
+
         return {
             exists: Boolean(usuario),
-            available: !usuario
+            available: !usuario,
+            esConductor,
+            usuario: usuario ? {
+                id: usuario._id,
+                nombre: usuario.nombre,
+                apellido: usuario.apellido,
+                nombreCompleto: usuario.nombreCompleto || `${usuario.nombre || ''} ${usuario.apellido || ''}`.trim(),
+                correo: usuario.correo,
+                telefono: usuario.telefono,
+                fechaNacimiento: usuario.fechaNacimiento ? new Date(usuario.fechaNacimiento).toISOString().split('T')[0] : '',
+                edad: usuario.edad,
+                rol: usuario.rol?.nombre || usuario.rol
+            } : null
         };
     }
 
@@ -329,6 +353,50 @@ class AuthService {
             usuario._id,
             passwordHash
         );
+    }
+
+    async verifyActivationToken(token) {
+        if (!token || typeof token !== "string") {
+            throw new AppError("El token de activación es requerido.", 400);
+        }
+
+        const usuario = await AuthRepository.obtenerPorTokenActivacion(token);
+        if (!usuario) {
+            throw new AppError("El enlace de activación es inválido o ha expirado. Contacta al administrador para recibir uno nuevo.", 400);
+        }
+
+        return {
+            valid: true,
+            correo: usuario.correo,
+            nombre: `${usuario.nombre || ""} ${usuario.apellido || ""}`.trim() || usuario.nombreCompleto || "Usuario",
+            rol: usuario.rol?.nombre || "Usuario"
+        };
+    }
+
+    async activateAccount(datos) {
+        const { token, password } = datos || {};
+
+        if (!token) {
+            throw new AppError("El token de activación es obligatorio.", 400);
+        }
+
+        if (!password || String(password).trim().length < 6) {
+            throw new AppError("La contraseña debe tener al menos 6 caracteres.", 400);
+        }
+
+        const usuario = await AuthRepository.obtenerPorTokenActivacion(token);
+        if (!usuario) {
+            throw new AppError("El enlace de activación es inválido o ha expirado.", 400);
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        const passwordHash = await bcrypt.hash(password.trim(), salt);
+
+        await AuthRepository.activarCuenta(usuario._id, passwordHash);
+
+        return {
+            mensaje: "Cuenta activada exitosamente. Ya puedes iniciar sesión con tu nueva contraseña."
+        };
     }
 }
 

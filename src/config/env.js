@@ -1,5 +1,9 @@
+import path from "path";
+import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 dotenv.config();
 
 export const env = {
@@ -11,7 +15,7 @@ export const env = {
     JWT_SECRET: process.env.JWT_SECRET,
     JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || "8h",
 
-    MAIL_HOST: process.env.MAIL_HOST,
+    MAIL_HOST: process.env.MAIL_HOST || "smtp.gmail.com",
     MAIL_PORT: process.env.MAIL_PORT || 587,
     MAIL_USER: process.env.MAIL_USER,
     MAIL_PASSWORD: process.env.MAIL_PASSWORD,
