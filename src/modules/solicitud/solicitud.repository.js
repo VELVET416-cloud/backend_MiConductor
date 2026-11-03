@@ -58,6 +58,18 @@ class SolicitudRepository {
             .populate(populateSolicitud);
     }
 
+    async obtenerPorCliente(clienteId) {
+        return await Solicitud.find({
+            cliente: clienteId
+        });
+    }
+
+    async obtenerPorVehiculo(vehiculoId) {
+        return await Solicitud.find({
+            vehiculo: vehiculoId
+        });
+    }
+
     async obtenerPorCodigo(codigo) {
         return await Solicitud.findOne({
             codigo

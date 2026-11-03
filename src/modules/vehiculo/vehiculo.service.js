@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 
 import VehiculoRepository from "./vehiculo.repository.js";
 import ClienteRepository from "../cliente/cliente.repository.js";
+import SolicitudRepository from "../solicitud/solicitud.repository.js";
 import AppError from "../../utils/AppError.js";
 
 class VehiculoService {
@@ -24,9 +25,14 @@ class VehiculoService {
             );
         }
 
-        const cliente = await ClienteRepository.obtenerPorId(
+        let cliente = await ClienteRepository.obtenerPorId(
             datos.cliente
         );
+
+        // Si no se encontró por ID de Cliente, intentar buscar por ID de Usuario
+        if (!cliente) {
+            cliente = await ClienteRepository.obtenerPorUsuario(datos.cliente);
+        }
 
         if (!cliente) {
             throw new AppError(
@@ -34,6 +40,9 @@ class VehiculoService {
                 404
             );
         }
+
+        // Asegurarnos de guardar con el ID correcto del Cliente
+        datos.cliente = cliente._id;
 
         // Validar placa
         const placaExiste =
@@ -66,9 +75,9 @@ class VehiculoService {
     }
 
     // Obtener todos
-    async obtenerTodos() {
+    async obtenerTodos(page, limit, search, estado) {
 
-        return await VehiculoRepository.obtenerTodos();
+        return await VehiculoRepository.obtenerTodos(page, limit, search, estado);
 
     }
 
@@ -106,8 +115,15 @@ class VehiculoService {
             );
         }
 
+        let cliente = await ClienteRepository.obtenerPorId(clienteId);
+        if (!cliente) {
+            cliente = await ClienteRepository.obtenerPorUsuario(clienteId);
+        }
+
+        const idReal = cliente ? cliente._id : clienteId;
+
         return await VehiculoRepository.obtenerPorCliente(
-            clienteId
+            idReal
         );
 
     }
@@ -130,6 +146,17 @@ class VehiculoService {
                 "Vehículo no encontrado.",
                 404
             );
+        }
+
+        if (datos.cliente) {
+            let cliente = await ClienteRepository.obtenerPorId(datos.cliente);
+            if (!cliente) {
+                cliente = await ClienteRepository.obtenerPorUsuario(datos.cliente);
+            }
+            if (!cliente) {
+                throw new AppError("El cliente no existe.", 404);
+            }
+            datos.cliente = cliente._id;
         }
 
         if (datos.marca)
@@ -214,7 +241,14 @@ class VehiculoService {
             );
         }
 
-        await VehiculoRepository.eliminar(id);
+        const solicitudes = await SolicitudRepository.obtenerPorVehiculo(id);
+
+        if (solicitudes && solicitudes.length > 0) {
+            throw new AppError("El vehículo tiene solicitudes de servicio registradas y no puede ser eliminado.", 400);
+        }
+
+        // Eliminación física
+        await VehiculoRepository.eliminarFisico(id);
 
         return;
 

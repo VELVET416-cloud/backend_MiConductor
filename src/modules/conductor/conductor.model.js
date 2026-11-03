@@ -1,5 +1,30 @@
 import mongoose from "mongoose";
 
+const licenciaItemSchema = new mongoose.Schema(
+    {
+        numero: {
+            type: String,
+            trim: true
+        },
+        categoria: {
+            type: String,
+            uppercase: true,
+            trim: true
+        },
+        fechaExpedicion: {
+            type: Date
+        },
+        fechaVencimiento: {
+            type: Date
+        },
+        lugarExpedicion: {
+            type: String,
+            trim: true
+        }
+    },
+    { _id: true }
+);
+
 const conductorSchema = new mongoose.Schema(
     {
 
@@ -32,6 +57,11 @@ const conductorSchema = new mongoose.Schema(
         fechaVencimiento: {
             type: Date,
             required: [true, "La fecha de vencimiento es obligatoria."]
+        },
+
+        licencias: {
+            type: [licenciaItemSchema],
+            default: []
         },
 
         experiencia: {

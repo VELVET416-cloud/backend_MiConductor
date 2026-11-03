@@ -3,23 +3,52 @@ import bcrypt from "bcrypt";
 import UsuarioRepository from "./usuario.repository.js";
 import RolRepository from "../rol/rol.repository.js";
 import AppError from "../../utils/AppError.js";
+import {
+    normalizeTipoDocumento,
+    normalizeDocumento,
+    validateTipoDocumentoValue,
+    validateDocumentoPorTipo
+} from "../cliente/cliente.schema.js";
 
 class UsuarioHelper {
 
     async crear(datos, nombreRol) {
 
-        // Normalizar datos
-        datos.nombre = datos.nombre.trim();
-        datos.apellido = datos.apellido.trim();
-        datos.tipoDocumento = datos.tipoDocumento.trim().toUpperCase();
-        datos.documento = datos.documento.trim();
-        datos.correo = datos.correo.trim().toLowerCase();
-        datos.telefono = datos.telefono.trim();
+        datos.nombre =
+            datos.nombre.trim();
 
-        // Documento repetido
+        datos.apellido =
+            datos.apellido.trim();
+
+        datos.tipoDocumento =
+            normalizeTipoDocumento(datos.tipoDocumento);
+
+        datos.documento =
+            normalizeDocumento(datos.documento, datos.tipoDocumento);
+
+        const tipoError = validateTipoDocumentoValue(datos.tipoDocumento);
+        if (tipoError) {
+            throw new AppError(tipoError, 400);
+        }
+
+        const docError = validateDocumentoPorTipo(datos.documento, datos.tipoDocumento);
+        if (docError) {
+            throw new AppError(docError, 400);
+        }
+
+        datos.correo =
+            datos.correo
+                .trim()
+                .toLowerCase();
+
+        datos.telefono =
+            datos.telefono.trim();
+
+
         const documentoExiste =
             await UsuarioRepository.obtenerPorDocumento(
-                datos.documento
+                datos.documento,
+                datos.tipoDocumento
             );
 
         if (documentoExiste) {
@@ -31,7 +60,7 @@ class UsuarioHelper {
 
         }
 
-        // Correo repetido
+
         const correoExiste =
             await UsuarioRepository.obtenerPorCorreo(
                 datos.correo
@@ -46,32 +75,42 @@ class UsuarioHelper {
 
         }
 
-        // Verificar que el rol exista
+        if (nombreRol) {
+            const rol =
+                await RolRepository.obtenerPorNombre(
+                    nombreRol
+                );
 
-        const rol = await RolRepository.obtenerPorId(
-            datos.rol
-        );
-
-        if (!rol) {
-
+            if (!rol) {
+                throw new AppError(
+                    `El rol ${nombreRol} no existe.`,
+                    404
+                );
+            }
+            datos.rol = rol._id;
+        } else if (!datos.rol) {
             throw new AppError(
-                "El rol seleccionado no existe.",
-                404
+                "No se proporcionó un rol para el usuario.",
+                400
             );
-
         }
 
-        // Encriptar contraseña
-        const salt = await bcrypt.genSalt(10);
+        const salt =
+            await bcrypt.genSalt(10);
 
-        datos.password = await bcrypt.hash(
-            datos.password,
-            salt
+        datos.password =
+            await bcrypt.hash(
+                datos.password,
+                salt
+            );
+
+
+
+        return await UsuarioRepository.crear(
+            datos
         );
-
-        return await UsuarioRepository.crear(datos);
-
     }
+
 
     async actualizar(id, datos) {
 
@@ -87,43 +126,81 @@ class UsuarioHelper {
 
         }
 
-        if (datos.nombre)
-            datos.nombre = datos.nombre.trim();
 
-        if (datos.apellido)
-            datos.apellido = datos.apellido.trim();
+        if (datos.nombre) {
 
-        if (datos.tipoDocumento)
+            datos.nombre =
+                datos.nombre.trim();
+
+        }
+
+        if (datos.apellido) {
+
+            datos.apellido =
+                datos.apellido.trim();
+
+        }
+
+        if (datos.tipoDocumento) {
+
             datos.tipoDocumento =
-                datos.tipoDocumento
-                    .trim()
-                    .toUpperCase();
+                normalizeTipoDocumento(datos.tipoDocumento);
 
-        if (datos.documento)
+            const tipoErr = validateTipoDocumentoValue(datos.tipoDocumento);
+            if (tipoErr) {
+                throw new AppError(tipoErr, 400);
+            }
+
+        }
+
+        const tipoEfectivo = datos.tipoDocumento || usuario.tipoDocumento;
+
+        if (datos.documento) {
+
             datos.documento =
-                datos.documento.trim();
+                normalizeDocumento(datos.documento, tipoEfectivo);
 
-        if (datos.correo)
+            const docErr = validateDocumentoPorTipo(datos.documento, tipoEfectivo);
+            if (docErr) {
+                throw new AppError(docErr, 400);
+            }
+
+        } else if (datos.tipoDocumento && datos.tipoDocumento !== usuario.tipoDocumento) {
+            const docErr = validateDocumentoPorTipo(usuario.documento, datos.tipoDocumento);
+            if (docErr) {
+                throw new AppError(docErr, 400);
+            }
+        }
+
+        if (datos.correo) {
+
             datos.correo =
                 datos.correo
                     .trim()
                     .toLowerCase();
 
-        if (datos.telefono)
+        }
+
+        if (datos.telefono) {
+
             datos.telefono =
                 datos.telefono.trim();
 
-        if (
-            datos.documento &&
-            datos.documento !== usuario.documento
-        ) {
+        }
 
+
+        if (
+            (datos.documento && datos.documento !== usuario.documento) ||
+            (datos.tipoDocumento && datos.tipoDocumento !== usuario.tipoDocumento)
+        ) {
+            const docVerificar = datos.documento || usuario.documento;
             const existe =
                 await UsuarioRepository.obtenerPorDocumento(
-                    datos.documento
+                    docVerificar,
+                    tipoEfectivo
                 );
 
-            if (existe) {
+            if (existe && existe._id.toString() !== usuario._id.toString()) {
 
                 throw new AppError(
                     "Ya existe un usuario con ese documento.",
@@ -131,8 +208,9 @@ class UsuarioHelper {
                 );
 
             }
-
         }
+
+
 
         if (
             datos.correo &&
@@ -152,8 +230,8 @@ class UsuarioHelper {
                 );
 
             }
-
         }
+
 
         if (datos.password) {
 
@@ -168,11 +246,11 @@ class UsuarioHelper {
 
         }
 
+
         return await UsuarioRepository.actualizar(
             id,
             datos
         );
-
     }
 
     async eliminar(id) {
@@ -181,6 +259,9 @@ class UsuarioHelper {
 
     }
 
+    async eliminarFisico(id) {
+        return await UsuarioRepository.eliminarFisico(id);
+    }
 }
 
 export default new UsuarioHelper();
