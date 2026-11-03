@@ -29,8 +29,7 @@ const tiposNovedad = [
     "PARADA_NO_PROGRAMADA",
     "INFO_RUTA",
     "ADMINISTRATIVA",
-
-    // Opción Otro
+    "SALUD",
     "OTRO",
     "OTROS"
 ];

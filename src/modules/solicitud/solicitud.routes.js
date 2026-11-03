@@ -61,6 +61,14 @@ router.patch(
 );
 
 // ======================================================
+// Calificar conductor por parte del cliente
+// ======================================================
+router.patch(
+    "/:id/calificar",
+    SolicitudController.calificar
+);
+
+// ======================================================
 // Actualizar solicitud
 // ======================================================
 router.put(

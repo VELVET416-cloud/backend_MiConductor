@@ -3,6 +3,7 @@ import { tiposNovedad, severidadesNovedad, estadosNovedad } from "./novedad.mode
 
 const objectIdRegex = /^[0-9a-fA-F]{24}$/;
 
+
 const objectIdSchema = z
     .string()
     .regex(
@@ -57,12 +58,11 @@ const novedadBaseSchema = z.object({
         .optional(),
 
     descripcion: z
-        .string({
-            required_error: "La descripción de la novedad es obligatoria."
-        })
+        .string()
         .trim()
-        .min(5, "La descripción debe tener al menos 5 caracteres.")
-        .max(1000, "La descripción no puede superar los 1000 caracteres."),
+        .max(1000, "La descripción no puede superar los 1000 caracteres.")
+        .optional()
+        .default("Novedad reportada en el servicio."),
 
     tipo: tipoSchema,
 

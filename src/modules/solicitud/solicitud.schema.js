@@ -102,7 +102,13 @@ const solicitudBaseSchema = z.object({
 
     fechaProgramada: z.coerce.date().optional(),
 
-    prioridad: prioridadSchema
+    prioridad: prioridadSchema,
+
+    calificacionConductor: z.number().int().min(1).max(5).optional().nullable(),
+
+    comentarioCliente: z.string().trim().max(1000).optional().nullable(),
+
+    comentarioConductor: z.string().trim().max(1000).optional().nullable()
 });
 
 export const crearSolicitudSchema = solicitudBaseSchema;

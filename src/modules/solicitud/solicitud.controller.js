@@ -34,7 +34,7 @@ class SolicitudController {
         try {
 
             const solicitudes =
-                await SolicitudService.obtenerTodos();
+                await SolicitudService.obtenerTodos(req.query);
 
             return successResponse(
                 res,
@@ -152,13 +152,40 @@ class SolicitudController {
         try {
 
             const { id } = req.params;
+            const { comentarioConductor } = req.body || {};
 
-            const solicitud = await SolicitudService.completar(id);
+            const solicitud = await SolicitudService.completar(id, { comentarioConductor });
 
             return successResponse(
                 res,
                 solicitud,
                 "Solicitud completada correctamente."
+            );
+
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    // ======================================================
+    // CALIFICAR CONDUCTOR POR PARTE DEL CLIENTE
+    // ======================================================
+
+    async calificar(req, res, next) {
+        try {
+
+            const { id } = req.params;
+            const { calificacion, comentarioCliente } = req.body || {};
+
+            const solicitud = await SolicitudService.calificar(id, {
+                calificacion,
+                comentarioCliente
+            });
+
+            return successResponse(
+                res,
+                solicitud,
+                "Calificación al conductor registrada correctamente."
             );
 
         } catch (error) {
