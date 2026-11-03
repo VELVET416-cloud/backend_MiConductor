@@ -1,11 +1,13 @@
 import mongoose from "mongoose";
 
 import ClienteRepository from "./cliente.repository.js";
+import UsuarioRepository from "../usuario/usuario.repository.js";
 import UsuarioHelper from "../usuario/usuario.helper.js";
 import AppError from "../../utils/AppError.js";
 import RolRepository from "../rol/rol.repository.js";
 import VehiculoRepository from "../vehiculo/vehiculo.repository.js";
 import SolicitudRepository from "../solicitud/solicitud.repository.js";
+import EmailService from "../auth/email.service.js";
 
 class ClienteService {
 
@@ -16,6 +18,11 @@ class ClienteService {
     async crear(datos) {
 
         datos.direccion = datos.direccion.trim();
+
+        // Si no se proporcionó contraseña, se asigna el número de documento como contraseña inicial
+        if (!datos.password || !datos.password.trim()) {
+            datos.password = datos.documento ? datos.documento.trim() : "";
+        }
 
         // Buscar el rol CLIENTE
         let rolClienteId = datos.rol || datos.rolId;
@@ -54,9 +61,23 @@ class ClienteService {
                 direccion: datos.direccion
             });
 
-            return await ClienteRepository.obtenerPorId(
-                cliente._id
-            );
+            const clienteCompleto = await ClienteRepository.obtenerPorId(cliente._id);
+
+            // Enviar correo de bienvenida con credenciales
+            try {
+                const info = await EmailService.enviarBienvenida({
+                    correo: datos.correo,
+                    nombre: `${datos.nombre} ${datos.apellido}`.trim(),
+                    usuario: datos.correo,
+                    clave: datos.password,
+                });
+                console.log(`[EmailService] ✓ Correo de bienvenida enviado a ${datos.correo} (ID: ${info?.messageId})`);
+            } catch (mailErr) {
+                // El correo es de mejor esfuerzo — no interrumpe el registro
+                console.error(`[EmailService] ✗ No se pudo enviar correo de bienvenida a ${datos.correo}:`, mailErr.message);
+            }
+
+            return clienteCompleto;
 
         } catch (error) {
 
@@ -217,6 +238,39 @@ class ClienteService {
 
         return;
 
+    }
+
+    // ======================================================
+    // VERIFICAR DOCUMENTO / CÉDULA
+    // ======================================================
+
+    async verificarDocumento(documento) {
+        if (!documento || !documento.trim()) {
+            throw new AppError("El documento es obligatorio para realizar la verificación.", 400);
+        }
+
+        const doc = documento.trim();
+        const usuarioExistente = await UsuarioRepository.obtenerPorDocumento(doc);
+
+        if (usuarioExistente) {
+            return {
+                disponible: false,
+                existe: true,
+                mensaje: "Ya existe un usuario registrado con este documento de identidad.",
+                usuario: {
+                    _id: usuarioExistente._id,
+                    nombre: `${usuarioExistente.nombre || ''} ${usuarioExistente.apellido || ''}`.trim(),
+                    correo: usuarioExistente.correo,
+                    documento: usuarioExistente.documento
+                }
+            };
+        }
+
+        return {
+            disponible: true,
+            existe: false,
+            mensaje: "El documento está disponible para registro."
+        };
     }
 
 }

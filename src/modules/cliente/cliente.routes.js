@@ -30,6 +30,12 @@ router.get(
     ClienteController.obtenerLista
 );
 
+// Verificar existencia de documento / cédula
+router.get(
+    "/verificar-documento/:documento",
+    ClienteController.verificarDocumento
+);
+
 // Obtener cliente por ID
 router.get(
     "/:id",

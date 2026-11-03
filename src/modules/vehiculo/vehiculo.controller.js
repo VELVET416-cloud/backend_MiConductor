@@ -123,6 +123,44 @@ class VehiculoController {
         }
     }
 
+    // Verificar disponibilidad de placa
+    async verificarPlaca(req, res, next) {
+        try {
+            const { placa } = req.params;
+            const resultado = await VehiculoService.verificarPlaca(placa);
+
+            return successResponse(
+                res,
+                resultado,
+                resultado.mensaje
+            );
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    // Cambiar estado del vehículo
+    async cambiarEstado(req, res, next) {
+        try {
+            const { id } = req.params;
+            const { estadoVehiculo, motivo } = req.body;
+
+            const vehiculo = await VehiculoService.cambiarEstado(
+                id,
+                estadoVehiculo,
+                motivo
+            );
+
+            return successResponse(
+                res,
+                vehiculo,
+                `Estado del vehículo actualizado a '${estadoVehiculo}' exitosamente.`
+            );
+        } catch (error) {
+            next(error);
+        }
+    }
+
 }
 
 export default new VehiculoController();
