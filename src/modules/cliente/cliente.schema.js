@@ -38,10 +38,10 @@ const crearClienteSchema = z.object({
         .email("Debe ingresar un correo válido."),
 
     password: z
-        .string({
-            required_error: "La contraseña es obligatoria."
-        })
-        .min(6),
+        .string()
+        .min(5, "La contraseña debe tener al menos 5 caracteres.")
+        .optional()
+        .or(z.literal("")),
 
     telefono: z
         .string({

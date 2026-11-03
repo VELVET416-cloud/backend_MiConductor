@@ -163,6 +163,24 @@ class ClienteController {
 
     }
 
+    /**
+     * Verifica si un documento/cédula ya está registrado en el sistema.
+     */
+    async verificarDocumento(req, res, next) {
+        try {
+            const { documento } = req.params;
+            const resultado = await ClienteService.verificarDocumento(documento);
+
+            return successResponse(
+                res,
+                resultado,
+                resultado.mensaje
+            );
+        } catch (error) {
+            next(error);
+        }
+    }
+
 }
 
 export default new ClienteController();
