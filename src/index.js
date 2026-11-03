@@ -29,4 +29,14 @@ const startServer = async () => {
   });
 };
 
+process.on("uncaughtException", (err) => {
+  console.error("🔥 UNCAUGHT EXCEPTION:", err);
+});
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("🔥 UNHANDLED REJECTION:", reason);
+});
+process.on("exit", (code) => {
+  console.log(`Node process exiting with code: ${code}`);
+});
+
 startServer();

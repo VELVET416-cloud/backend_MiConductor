@@ -99,6 +99,9 @@ class NotificacionService {
             throw new AppError("El id del usuario no es válido.", 400);
         }
 
+        // Limpiar en segundo plano registros con más de 2 días
+        NotificacionRepository.eliminarAntiguas(2).catch(() => {});
+
         return await NotificacionRepository.listarPorUsuario(usuarioId, query);
     }
 
@@ -608,7 +611,7 @@ class NotificacionService {
     }
 
     /**
-     * Novedad reportada: avisar al administrador.
+     * Novedad reportada: avisar al administrador y al cliente si está en un viaje.
      */
     async notificarNovedadReportada(novedad) {
         if (!novedad) return;
@@ -618,6 +621,7 @@ class NotificacionService {
             const tipo = novedad.tipo || "GENERAL";
             const severidad = novedad.severidad || "MEDIA";
 
+            // 1. Avisar a administradores
             await this.crearYEnviarParaAdmins({
                 titulo: `Nueva novedad: ${tituloNovedad}`,
                 mensaje: `Se ha registrado una novedad de tipo ${tipo} con severidad ${severidad}.`,
@@ -626,12 +630,68 @@ class NotificacionService {
                 solicitud: novedad.solicitud || null,
                 datosExtra: { tipo, severidad }
             });
+
+            // 2. Si la novedad corresponde a una solicitud activa, avisar al cliente
+            if (novedad.solicitud) {
+                try {
+                    const Solicitud = (await import("../solicitud/solicitud.model.js")).default;
+                    const Cliente = (await import("../cliente/cliente.model.js")).default;
+                    const solDoc = await Solicitud.findById(novedad.solicitud);
+                    if (solDoc && solDoc.cliente) {
+                        let clienteUsuarioId = null;
+                        if (solDoc.cliente.usuario) {
+                            clienteUsuarioId = solDoc.cliente.usuario._id || solDoc.cliente.usuario;
+                        } else {
+                            const clDoc = await Cliente.findById(solDoc.cliente);
+                            clienteUsuarioId = clDoc?.usuario;
+                        }
+
+                        if (clienteUsuarioId) {
+                            const esCambioRuta = (novedad.titulo && /ruta|desv[ií]o/i.test(novedad.titulo)) ||
+                                                 (novedad.descripcion && /ruta|desv[ií]o/i.test(novedad.descripcion));
+                            const tituloAviso = esCambioRuta
+                                ? `⚠️ Cambio de ruta: ${tituloNovedad}`
+                                : `Aviso del viaje: ${tituloNovedad}`;
+                            const mensajeAviso = novedad.descripcion || `Aviso sobre tu servicio: ${tituloNovedad}.`;
+                            await this.crearYEnviarNotificacion({
+                                destinatario: clienteUsuarioId,
+                                titulo: tituloAviso,
+                                mensaje: mensajeAviso,
+                                tipo: "NOVEDAD_REPORTADA",
+                                novedad: novedad._id,
+                                solicitud: novedad.solicitud,
+                                datosExtra: { tipo, severidad, origen: "CONDUCTOR", cambioRuta: esCambioRuta }
+                            });
+                        }
+                    }
+                } catch (clientErr) {
+                    console.error("Error al notificar al cliente sobre la novedad:", clientErr.message);
+                }
+            }
         } catch (error) {
             console.error("Error al notificar novedad reportada:", error.message);
         }
     }
 
+    /**
+     * Limpieza explícita de notificaciones antiguas (más de 2 días).
+     */
+    async limpiarNotificacionesAntiguas(dias = 2) {
+        return await NotificacionRepository.eliminarAntiguas(dias);
+    }
+
 }
 
-export default new NotificacionService();
+const notificacionServiceInstance = new NotificacionService();
+
+// Limpieza automática periódica cada 6 horas y al iniciar
+try {
+    NotificacionRepository.eliminarAntiguas(2).catch(() => {});
+    const timer = setInterval(() => {
+        NotificacionRepository.eliminarAntiguas(2).catch(() => {});
+    }, 6 * 60 * 60 * 1000);
+    if (timer.unref) timer.unref();
+} catch (_) {}
+
+export default notificacionServiceInstance;
 

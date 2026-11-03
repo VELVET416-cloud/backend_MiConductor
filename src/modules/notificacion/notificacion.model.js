@@ -91,6 +91,9 @@ const notificacionSchema = new mongoose.Schema(
 notificacionSchema.index({ destinatario: 1, createdAt: -1 });
 notificacionSchema.index({ destinatario: 1, leida: 1, createdAt: -1 });
 
+// Índice TTL: Limpiar automáticamente notificaciones después de 2 días (48 horas = 172800 segundos)
+notificacionSchema.index({ createdAt: 1 }, { expireAfterSeconds: 172800 });
+
 const Notificacion = mongoose.model("Notificacion", notificacionSchema);
 
 export default Notificacion;
