@@ -224,6 +224,16 @@ class SolicitudService {
 
         if (datos.destino) {
             datos.destino = datos.destino.trim();
+            if (datos.destino !== solicitud.destino) {
+                if (!solicitud.destinoInicial) {
+                    datos.destinoInicial = solicitud.destino;
+                }
+                datos.cambioRuta = {
+                    motivo: datos.motivo || datos.motivoCambioRuta || "Cambio de ruta por novedad en la vía",
+                    nuevoDestino: datos.destino,
+                    fechaCambio: new Date()
+                };
+            }
         }
 
         if (datos.prioridad) {

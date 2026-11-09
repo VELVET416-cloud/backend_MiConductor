@@ -21,6 +21,24 @@ class UsuarioController {
         }
     }
 
+    // Consultar persona por documento (público para autocompletado)
+    async consultarPorDocumento(req, res, next) {
+        try {
+            const { documento } = req.params;
+            const { tipoDocumento } = req.query;
+
+            const resultado = await UsuarioService.consultarPorDocumento(documento, tipoDocumento);
+
+            return successResponse(
+                res,
+                resultado,
+                resultado.existe ? "Persona encontrada." : "Persona no registrada."
+            );
+        } catch (error) {
+            next(error);
+        }
+    }
+
     // Obtener todos los usuarios
     async obtenerTodos(req, res, next) {
         try {
