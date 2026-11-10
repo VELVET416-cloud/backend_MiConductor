@@ -1,6 +1,8 @@
 import { Router } from "express";
 
 import SolicitudController from "./solicitud.controller.js";
+import InvitadoController from "../invitado/invitado.controller.js";
+import { validarCrearSolicitudInvitado } from "../invitado/invitado.validation.js";
 
 import {
     validarCrearSolicitud,
@@ -9,6 +11,15 @@ import {
 } from "./solicitud.validation.js";
 
 const router = Router();
+
+// ======================================================
+// Crear solicitud como invitado
+// ======================================================
+router.post(
+    "/invitado",
+    validarCrearSolicitudInvitado,
+    InvitadoController.crearSolicitud
+);
 
 // ======================================================
 // Crear solicitud

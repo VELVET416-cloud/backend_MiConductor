@@ -108,7 +108,15 @@ const solicitudBaseSchema = z.object({
 
     comentarioCliente: z.string().trim().max(1000).optional().nullable(),
 
-    comentarioConductor: z.string().trim().max(1000).optional().nullable()
+    comentarioConductor: z.string().trim().max(1000).optional().nullable(),
+
+    destinoInicial: z.string().trim().optional().nullable(),
+
+    cambioRuta: z.any().optional().nullable(),
+
+    motivo: z.string().trim().optional().nullable(),
+
+    nuevoDestino: z.string().trim().optional().nullable()
 });
 
 export const crearSolicitudSchema = solicitudBaseSchema;

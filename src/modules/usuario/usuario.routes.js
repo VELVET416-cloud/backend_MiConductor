@@ -18,6 +18,16 @@ router.post(
     UsuarioController.crear
 );
 
+// Consultar usuario por documento (público / autocompletado)
+router.get(
+    "/consulta-documento/:documento",
+    UsuarioController.consultarPorDocumento
+);
+router.get(
+    "/consulta/:documento",
+    UsuarioController.consultarPorDocumento
+);
+
 // Obtener todos los usuarios
 router.get(
     "/",
