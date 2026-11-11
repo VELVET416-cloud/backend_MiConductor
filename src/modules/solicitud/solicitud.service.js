@@ -152,8 +152,8 @@ class SolicitudService {
         return solicitud;
     }
 
-    async obtenerTodos() {
-        return await SolicitudRepository.obtenerTodos();
+    async obtenerTodos(filtros = {}) {
+        return await SolicitudRepository.obtenerTodos(filtros);
     }
 
     async obtenerPorId(id) {
@@ -386,7 +386,7 @@ class SolicitudService {
         return resultado;
     }
 
-    async completar(id) {
+    async completar(id, { comentarioConductor } = {}) {
         if (!mongoose.Types.ObjectId.isValid(id)) {
             throw new AppError(
                 "El id de la solicitud no es valido.",
@@ -407,11 +407,33 @@ class SolicitudService {
             );
         }
 
-        const resultado = await SolicitudRepository.completar(id);
+        const resultado = await SolicitudRepository.completar(id, { comentarioConductor });
 
         await ServicioService.finalizar(id);
 
         return resultado;
+    }
+
+    async calificar(id, { calificacion, comentarioCliente } = {}) {
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            throw new AppError("El id de la solicitud no es valido.", 400);
+        }
+
+        const numCalificacion = Number(calificacion);
+        if (!numCalificacion || numCalificacion < 1 || numCalificacion > 5) {
+            throw new AppError("La calificación debe ser un número entre 1 y 5 estrellas.", 400);
+        }
+
+        const solicitud = await SolicitudRepository.obtenerPorId(id);
+
+        if (!solicitud) {
+            throw new AppError("Solicitud no encontrada.", 404);
+        }
+
+        return await SolicitudRepository.calificar(id, {
+            calificacion: numCalificacion,
+            comentarioCliente: comentarioCliente ? String(comentarioCliente).trim() : null
+        });
     }
 }
 

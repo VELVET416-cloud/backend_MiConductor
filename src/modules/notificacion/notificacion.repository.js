@@ -36,7 +36,12 @@ class NotificacionRepository {
     }
 
     async listarPorUsuario(usuarioId, { page = 1, limit = 20, leida } = {}) {
-        const filtro = { destinatario: usuarioId };
+        // Limitar a notificaciones de los últimos 2 días (48 horas)
+        const dosDiasAtras = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
+        const filtro = {
+            destinatario: usuarioId,
+            createdAt: { $gte: dosDiasAtras }
+        };
 
         if (typeof leida === "boolean") {
             filtro.leida = leida;
@@ -65,9 +70,18 @@ class NotificacionRepository {
     }
 
     async contarNoLeidas(usuarioId) {
+        const dosDiasAtras = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
         return await Notificacion.countDocuments({
             destinatario: usuarioId,
-            leida: false
+            leida: false,
+            createdAt: { $gte: dosDiasAtras }
+        });
+    }
+
+    async eliminarAntiguas(dias = 2) {
+        const fechaLimite = new Date(Date.now() - dias * 24 * 60 * 60 * 1000);
+        return await Notificacion.deleteMany({
+            createdAt: { $lt: fechaLimite }
         });
     }
 

@@ -30,10 +30,10 @@ router.get(
     ClienteController.obtenerLista
 );
 
-// Obtener cliente por ID de Usuario (Para app móvil y sincronización)
+// Verificar existencia de documento / cédula
 router.get(
-    "/usuario/:usuarioId",
-    ClienteController.obtenerPorUsuario
+    "/verificar-documento/:documento",
+    ClienteController.verificarDocumento
 );
 
 // Obtener cliente por ID

@@ -174,6 +174,28 @@ const vehiculoSchema = new mongoose.Schema(
             default: null
         },
 
+        estadoVehiculo: {
+            type: String,
+            enum: ["activo", "en_mantenimiento", "vendido", "inactivo"],
+            default: "activo",
+            trim: true
+        },
+
+        motivoCambioEstado: {
+            type: String,
+            default: null,
+            trim: true
+        },
+
+        historialEstados: [
+            {
+                estadoAnterior: { type: String, default: null },
+                estadoNuevo: { type: String, required: true },
+                motivo: { type: String, default: null },
+                fecha: { type: Date, default: Date.now }
+            }
+        ],
+
         estado: {
             type: Boolean,
             default: true

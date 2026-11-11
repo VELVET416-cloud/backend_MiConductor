@@ -45,8 +45,21 @@ class SolicitudRepository {
         return await Solicitud.create(datosSolicitud);
     }
 
-    async obtenerTodos() {
-        return await Solicitud.find()
+    async obtenerTodos(filtros = {}) {
+        const query = {};
+        if (filtros.correoCliente) {
+            query.correoCliente = String(filtros.correoCliente).toLowerCase().trim();
+        }
+        if (filtros.cliente) {
+            query.cliente = filtros.cliente;
+        }
+        if (filtros.conductor) {
+            query.conductorAsignado = filtros.conductor;
+        }
+        if (filtros.estado) {
+            query.estado = String(filtros.estado).toUpperCase().trim();
+        }
+        return await Solicitud.find(query)
             .populate(populateSolicitud)
             .sort({
                 createdAt: -1
@@ -117,14 +130,33 @@ class SolicitudRepository {
         ).populate(populateSolicitud);
     }
 
-    async completar(id) {
+    async completar(id, { comentarioConductor } = {}) {
+        const update = { estado: "COMPLETADO" };
+        if (comentarioConductor !== undefined && comentarioConductor !== null) {
+            update.comentarioConductor = comentarioConductor;
+        }
         return await Solicitud.findOneAndUpdate(
             {
                 _id: id
             },
+            update,
             {
-                estado: "COMPLETADO"
+                new: true,
+                runValidators: true
+            }
+        ).populate(populateSolicitud);
+    }
+
+    async calificar(id, { calificacion, comentarioCliente } = {}) {
+        const update = { calificacionConductor: calificacion };
+        if (comentarioCliente !== undefined && comentarioCliente !== null) {
+            update.comentarioCliente = comentarioCliente;
+        }
+        return await Solicitud.findOneAndUpdate(
+            {
+                _id: id
             },
+            update,
             {
                 new: true,
                 runValidators: true

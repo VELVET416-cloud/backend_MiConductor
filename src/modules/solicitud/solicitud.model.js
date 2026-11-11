@@ -100,6 +100,27 @@ const solicitudSchema = new mongoose.Schema(
             default: "PENDIENTE",
             trim: true,
             uppercase: true
+        },
+
+        calificacionConductor: {
+            type: Number,
+            min: 1,
+            max: 5,
+            default: null
+        },
+
+        comentarioCliente: {
+            type: String,
+            trim: true,
+            maxlength: 1000,
+            default: null
+        },
+
+        comentarioConductor: {
+            type: String,
+            trim: true,
+            maxlength: 1000,
+            default: null
         }
     },
     {

@@ -49,19 +49,62 @@ class VehiculoService {
         datos.cliente = cliente._id;
 
         // Validar placa
-        const placaExiste =
+        const vehiculoExistente =
             await VehiculoRepository.obtenerPorPlaca(
                 datos.placa
             );
 
-        if (placaExiste) {
-            throw new AppError(
-                "Ya existe un vehículo con esa placa.",
-                409
+        if (vehiculoExistente) {
+            const estadoActual = vehiculoExistente.estadoVehiculo || (vehiculoExistente.estado ? 'activo' : 'inactivo');
+
+            // Si el vehículo está activo o en mantenimiento o inactivo (diferente de vendido)
+            if (estadoActual !== 'vendido') {
+                throw new AppError(
+                    "Lo sentimos, el vehículo ya se encuentra registrado en la plataforma y está activo con otro conductor. Por favor, comunícate con la persona para que le dé de baja a su vehículo.",
+                    409
+                );
+            }
+
+            // Si el vehículo está en estatus 'vendido', el nuevo propietario puede registrarlo:
+            // Es obligatorio presentar la nueva tarjeta de propiedad a nombre del nuevo dueño
+            if (!datos.tarjetaPropiedad && !datos.tarjetaCirculacion) {
+                throw new AppError(
+                    "Para registrar este vehículo vendido, es obligatorio subir la nueva tarjeta de propiedad.",
+                    400
+                );
+            }
+
+            const datosActualizacion = {
+                cliente: datos.cliente,
+                tarjetaPropiedad: datos.tarjetaPropiedad || datos.tarjetaCirculacion || vehiculoExistente.tarjetaPropiedad,
+                fechaVencimientoSoat: datos.fechaVencimientoSoat || vehiculoExistente.fechaVencimientoSoat,
+                fechaVencimientoTecnomecanica: datos.fechaVencimientoTecnomecanica || vehiculoExistente.fechaVencimientoTecnomecanica,
+                estadoVehiculo: 'activo',
+                estado: true,
+                motivoCambioEstado: 'Vehículo reactivado y transferido a nuevo propietario'
+            };
+
+            if (datos.foto1) datosActualizacion.foto1 = datos.foto1;
+            if (datos.foto2) datosActualizacion.foto2 = datos.foto2;
+            if (datos.foto3) datosActualizacion.foto3 = datos.foto3;
+            if (datos.fotos && datos.fotos.length > 0) datosActualizacion.fotos = datos.fotos;
+
+            // Actualizar datos del vehículo y agregar al historial
+            const vehiculoActualizado = await VehiculoRepository.actualizar(
+                vehiculoExistente._id,
+                datosActualizacion
             );
+
+            await VehiculoRepository.cambiarEstado(vehiculoExistente._id, {
+                estadoNuevo: 'activo',
+                motivo: 'Vehículo transferido y registrado por nuevo propietario',
+                estadoAnterior: 'vendido'
+            });
+
+            return vehiculoActualizado;
         }
 
-        // Validar chasis (solo si fue proporcionado)
+        // Validar chasis si es vehículo nuevo
         if (datos.numeroChasis) {
             const chasisExiste =
                 await VehiculoRepository.obtenerPorChasis(
@@ -75,6 +118,17 @@ class VehiculoService {
                 );
             }
         }
+
+        datos.estadoVehiculo = 'activo';
+        datos.estado = true;
+        datos.historialEstados = [
+            {
+                estadoAnterior: null,
+                estadoNuevo: 'activo',
+                motivo: 'Registro inicial del vehículo',
+                fecha: new Date()
+            }
+        ];
 
         return await VehiculoRepository.crear(datos);
 
@@ -256,6 +310,96 @@ class VehiculoService {
 
         return;
 
+    }
+
+    // Verificar disponibilidad de placa
+    async verificarPlaca(placa) {
+        if (!placa || typeof placa !== 'string') {
+            throw new AppError("La placa es obligatoria.", 400);
+        }
+
+        const placaLimpia = placa.trim().toUpperCase();
+
+        const vehiculo = await VehiculoRepository.obtenerPorPlaca(placaLimpia);
+
+        if (!vehiculo) {
+            return {
+                existe: false,
+                permitido: true,
+                mensaje: "La placa está disponible para registro.",
+                vehiculo: null
+            };
+        }
+
+        const estadoVehiculo = vehiculo.estadoVehiculo || (vehiculo.estado ? 'activo' : 'inactivo');
+
+        if (estadoVehiculo === 'vendido') {
+            return {
+                existe: true,
+                permitido: true,
+                estadoVehiculo: 'vendido',
+                mensaje: "El vehículo fue marcado como vendido por su anterior dueño. Puedes registrarlo como nuevo propietario actualizando la tarjeta de propiedad y fechas.",
+                vehiculo: {
+                    _id: vehiculo._id,
+                    placa: vehiculo.placa,
+                    marca: vehiculo.marca,
+                    modelo: vehiculo.modelo,
+                    anio: vehiculo.anio,
+                    color: vehiculo.color,
+                    tipoVehiculo: vehiculo.tipoVehiculo,
+                    numeroChasis: vehiculo.numeroChasis,
+                    tipoCombustible: vehiculo.tipoCombustible,
+                    numeroPuertas: vehiculo.numeroPuertas,
+                    estadoVehiculo: 'vendido'
+                }
+            };
+        }
+
+        return {
+            existe: true,
+            permitido: false,
+            estadoVehiculo,
+            mensaje: "Lo sentimos, el vehículo ya se encuentra registrado en la plataforma y está activo con otro conductor. Por favor, comunícate con la persona para que le dé de baja a su vehículo.",
+            vehiculo: {
+                _id: vehiculo._id,
+                placa: vehiculo.placa,
+                marca: vehiculo.marca,
+                modelo: vehiculo.modelo,
+                estadoVehiculo
+            }
+        };
+    }
+
+    // Cambiar estado del vehículo
+    async cambiarEstado(id, nuevoEstado, motivo) {
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            throw new AppError("El id del vehículo no es válido.", 400);
+        }
+
+        const vehiculo = await VehiculoRepository.obtenerPorId(id);
+
+        if (!vehiculo) {
+            throw new AppError("Vehículo no encontrado.", 404);
+        }
+
+        const estadosValidos = ["activo", "en_mantenimiento", "vendido", "inactivo"];
+        if (!estadosValidos.includes(nuevoEstado)) {
+            throw new AppError("El estado especificado no es válido.", 400);
+        }
+
+        if (["en_mantenimiento", "vendido", "inactivo"].includes(nuevoEstado)) {
+            if (!motivo || motivo.trim().length < 3) {
+                throw new AppError("El motivo del cambio de estado es obligatorio y debe tener al menos 3 caracteres.", 400);
+            }
+        }
+
+        const estadoAnterior = vehiculo.estadoVehiculo || (vehiculo.estado ? 'activo' : 'inactivo');
+
+        return await VehiculoRepository.cambiarEstado(id, {
+            estadoNuevo: nuevoEstado,
+            motivo: motivo ? motivo.trim() : null,
+            estadoAnterior
+        });
     }
 
 }

@@ -120,13 +120,31 @@ const crearVehiculoSchema = z.object({
         .nullable()
         .optional(),
 
+    estadoVehiculo: z.enum(["activo", "en_mantenimiento", "vendido", "inactivo"]).optional(),
+    motivoCambioEstado: z.string().trim().nullable().optional(),
     estado: z.boolean().optional()
 
 });
 
 const actualizarVehiculoSchema = crearVehiculoSchema.partial();
 
+const cambiarEstadoVehiculoSchema = z.object({
+    estadoVehiculo: z.enum(["activo", "en_mantenimiento", "vendido", "inactivo"], {
+        required_error: "El estado del vehículo es obligatorio."
+    }),
+    motivo: z.string().trim().optional().nullable()
+}).refine((data) => {
+    if (["en_mantenimiento", "vendido", "inactivo"].includes(data.estadoVehiculo)) {
+        return Boolean(data.motivo && data.motivo.trim().length >= 3);
+    }
+    return true;
+}, {
+    message: "El motivo del cambio de estado es obligatorio y debe tener al menos 3 caracteres.",
+    path: ["motivo"]
+});
+
 export {
     crearVehiculoSchema,
-    actualizarVehiculoSchema
+    actualizarVehiculoSchema,
+    cambiarEstadoVehiculoSchema
 };

@@ -17,7 +17,7 @@ export function calcularPrioridadAutomatica(tipo, severidadEnviada) {
     // Prioridad Alta:
     // - Accidente
     // - Falla mecánica grave
-    // - Emergencias médicas, robo, bloqueo total
+    // - Emergencias médicas, robo, bloqueo total, salud
     if ([
         "ACCIDENTE",
         "FALLA_MECANICA_GRAVE",
@@ -25,7 +25,8 @@ export function calcularPrioridadAutomatica(tipo, severidadEnviada) {
         "EMERGENCIA_MEDICA",
         "ROBO_ASALTO",
         "BLOQUEO_TOTAL_VIA",
-        "MECANICA"
+        "MECANICA",
+        "SALUD"
     ].includes(tipoNorm)) {
         return "ALTA";
     }
@@ -87,21 +88,20 @@ class NovedadService {
     // ======================================================
     async crear(datos) {
         datos.tipo = (datos.tipo || "OTRO").trim().toUpperCase();
-        datos.descripcion = (datos.descripcion || "").trim();
+        datos.titulo = (datos.titulo || `Novedad: ${datos.tipo}`).trim();
+        datos.descripcion = (datos.descripcion || "Novedad reportada en el servicio.").trim();
 
-        // 1. Asignar prioridad automática en el backend según el tipo
-        datos.severidad = calcularPrioridadAutomatica(
-            datos.tipo,
-            datos.severidad || datos.prioridad
-        );
-
-        if (!datos.titulo) {
-            datos.titulo = `Novedad: ${datos.tipo}`;
+        // 1. Asignar prioridad/severidad (si se envió, respetarla; si no, calcularla automáticamente)
+        if (datos.severidad && typeof datos.severidad === "string" && datos.severidad.trim()) {
+            datos.severidad = datos.severidad.trim().toUpperCase();
         } else {
-            datos.titulo = datos.titulo.trim();
+            datos.severidad = calcularPrioridadAutomatica(
+                datos.tipo,
+                datos.severidad || datos.prioridad
+            );
         }
 
-        // 2. Estado inicial: Las novedades nuevas deben iniciar con "POR_REVISAR"
+        // 2. Estado inicial: respetar el enviado o asignar "POR_REVISAR" por defecto
         datos.estadoNovedad = (datos.estadoNovedad || "POR_REVISAR").trim().toUpperCase();
 
         if (datos.observaciones !== null && datos.observaciones !== undefined && datos.observaciones.trim) {

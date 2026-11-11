@@ -152,7 +152,11 @@ const crearClienteSchema = z
             .min(1, "El correo es obligatorio.")
             .regex(EMAIL_REGEX, "Debe ingresar un correo válido."),
 
-        password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres.").optional(),
+    password: z
+        .string({
+            required_error: "La contraseña es obligatoria."
+        })
+        .min(6),
 
         telefono: z
             .string({
