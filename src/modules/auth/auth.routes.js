@@ -18,6 +18,12 @@ router.post(
     AuthController.login
 );
 
+router.get(
+    "/me",
+    authMiddleware,
+    AuthController.me
+);
+
 router.post(
     "/mobile-login",
     validateSchema(loginSchema),

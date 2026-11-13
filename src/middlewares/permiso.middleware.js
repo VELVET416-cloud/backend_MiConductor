@@ -1,6 +1,10 @@
 import AppError from "../utils/AppError.js";
 
-const permisoMiddleware = (permisoRequerido) => {
+const permisoMiddleware = (...permisosRequeridos) => {
+
+    const listaRequeridos = permisosRequeridos
+        .flat()
+        .filter(Boolean);
 
     return (req, res, next) => {
 
@@ -18,20 +22,13 @@ const permisoMiddleware = (permisoRequerido) => {
             return next();
         }
 
-        // Modificar o crear roles y permisos es exclusivo del rol ADMINISTRADOR
-        const permisosSoloAdmin = ["crear.roles", "editar.roles", "eliminar.roles", "crear.permisos", "editar.permisos", "eliminar.permisos"];
-        if (permisosSoloAdmin.includes(permisoRequerido)) {
-            return next(
-                new AppError(
-                    "Solo los administradores tienen permiso para crear, editar o eliminar roles y permisos.",
-                    403
-                )
-            );
-        }
+        const permisos = Array.isArray(req.user.permisos) ? req.user.permisos : [];
 
-        const permisos = req.user.permisos || [];
+        const tienePermiso = listaRequeridos.some(permiso =>
+            permisos.includes(permiso)
+        );
 
-        if (!permisos.includes(permisoRequerido)) {
+        if (!tienePermiso) {
             return next(
                 new AppError(
                     "No tiene permisos para realizar esta acción.",

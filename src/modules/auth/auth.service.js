@@ -48,15 +48,24 @@ class AuthService {
         }
 
         const rolNombre = usuario.rol?.nombre || "";
-        const permisos = Array.isArray(usuario.rol?.permisos) ? usuario.rol.permisos : [];
-        if (rolNombre === "CLIENTE" || (rolNombre !== "ADMINISTRADOR" && permisos.length === 0)) {
+        if (!usuario.rol || usuario.rol.activo === false) {
             throw new AppError(
-                "Este usuario no tiene acceso al panel administrativo o no cuenta con permisos asignados.",
+                "El rol asignado al usuario se encuentra inactivo o no es válido.",
+                403
+            );
+        }
+        const permisos = Array.isArray(usuario.rol?.permisos) ? usuario.rol.permisos : [];
+        if (rolNombre === "CLIENTE") {
+            throw new AppError(
+                "Este usuario no tiene acceso al panel administrativo.",
                 403
             );
         }
 
-        const codigosPermisos = permisos.map(p => typeof p === "string" ? p : (p.codigo || "")).filter(Boolean);
+        const codigosPermisos = permisos
+            .filter(p => p && (typeof p === "string" || p.activo !== false))
+            .map(p => typeof p === "string" ? p : (p.codigo || ""))
+            .filter(Boolean);
         const token = jwt.sign(
             {
                 id: usuario._id,
@@ -80,6 +89,34 @@ class AuthService {
                 rol: rolNombre,
                 permisos: codigosPermisos
             }
+        };
+    }
+
+    async obtenerPerfilActual(userId) {
+        if (!userId) {
+            throw new AppError("Usuario no autenticado.", 401);
+        }
+
+        const usuario = await AuthRepository.obtenerPorId(userId);
+        if (!usuario) {
+            throw new AppError("Usuario no encontrado.", 404);
+        }
+
+        const rolNombre = usuario.rol?.nombre || "";
+        const permisos = Array.isArray(usuario.rol?.permisos) ? usuario.rol.permisos : [];
+        const codigosPermisos = permisos
+            .filter(p => p && (typeof p === "string" || p.activo !== false))
+            .map(p => typeof p === "string" ? p : (p.codigo || ""))
+            .filter(Boolean);
+
+        return {
+            id: usuario._id,
+            nombre: usuario.nombre,
+            apellido: usuario.apellido,
+            correo: usuario.correo,
+            rol: rolNombre,
+            rolId: usuario.rol?._id || null,
+            permisos: codigosPermisos
         };
     }
 
