@@ -1,12 +1,21 @@
 import ClienteService from "./cliente.service.js";
+
 import { successResponse } from "../../responses/success.response.js";
 
+/**
+ * Controlador encargado de gestionar las operaciones relacionadas
+ * con los clientes.
+ *
+ * Se comunica con ClienteService para realizar las operaciones
+ * de creación, consulta, actualización y eliminación.
+ */
 class ClienteController {
 
-    // Crear cliente
+    /**
+     * Crea un nuevo cliente.
+     */
     async crear(req, res, next) {
         try {
-
             const cliente = await ClienteService.crear(req.body);
 
             return successResponse(
@@ -15,35 +24,73 @@ class ClienteController {
                 "Cliente creado correctamente.",
                 201
             );
-
         } catch (error) {
             next(error);
         }
     }
 
-    // Obtener todos
+    /**
+     * Obtiene todos los clientes registrados.
+     */
     async obtenerTodos(req, res, next) {
         try {
+            const page = parseInt(req.query.page) || 1;
+            const limit = parseInt(req.query.limit) || 10;
+            const search = req.query.search || '';
+            const estado = req.query.estado || '';
 
-            const clientes = await ClienteService.obtenerTodos();
+            const clientesData = await ClienteService.obtenerTodos(page, limit, search, estado);
 
             return successResponse(
                 res,
-                clientes,
+                clientesData,
                 "Clientes obtenidos correctamente."
             );
-
         } catch (error) {
             next(error);
         }
     }
 
-    // Obtener por ID
+    /**
+     * Obtiene una lista no paginada de todos los clientes activos.
+     */
+    async obtenerLista(req, res, next) {
+        try {
+            const clientes = await ClienteService.obtenerLista();
+            return successResponse(
+                res,
+                clientes,
+                "Lista de clientes obtenida correctamente."
+            );
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    /**
+     * Obtiene un cliente específico por su ID de Usuario.
+     */
+    async obtenerPorUsuario(req, res, next) {
+        try {
+            const { usuarioId } = req.params;
+            const cliente = await ClienteService.obtenerPorUsuario(usuarioId);
+
+            return successResponse(
+                res,
+                cliente,
+                "Cliente obtenido correctamente."
+            );
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    /**
+     * Obtiene un cliente específico utilizando su ID.
+     */
     async obtenerPorId(req, res, next) {
         try {
-
             const { id } = req.params;
-
             const cliente = await ClienteService.obtenerPorId(id);
 
             return successResponse(
@@ -51,18 +98,17 @@ class ClienteController {
                 cliente,
                 "Cliente obtenido correctamente."
             );
-
         } catch (error) {
             next(error);
         }
     }
 
-    // Actualizar
+    /**
+     * Actualiza la información de un cliente existente.
+     */
     async actualizar(req, res, next) {
         try {
-
             const { id } = req.params;
-
             const cliente = await ClienteService.actualizar(
                 id,
                 req.body
@@ -73,18 +119,17 @@ class ClienteController {
                 cliente,
                 "Cliente actualizado correctamente."
             );
-
         } catch (error) {
             next(error);
         }
     }
 
-    // Eliminar
+    /**
+     * Elimina un cliente utilizando su ID.
+     */
     async eliminar(req, res, next) {
         try {
-
             const { id } = req.params;
-
             await ClienteService.eliminar(id);
 
             return successResponse(
@@ -92,7 +137,24 @@ class ClienteController {
                 null,
                 "Cliente eliminado correctamente."
             );
+        } catch (error) {
+            next(error);
+        }
+    }
 
+    /**
+     * Verifica si un documento/cédula ya está registrado en el sistema.
+     */
+    async verificarDocumento(req, res, next) {
+        try {
+            const { documento } = req.params;
+            const resultado = await ClienteService.verificarDocumento(documento);
+
+            return successResponse(
+                res,
+                resultado,
+                resultado.mensaje
+            );
         } catch (error) {
             next(error);
         }

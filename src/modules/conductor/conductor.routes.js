@@ -6,87 +6,84 @@ import {
     crearConductorSchema,
     actualizarConductorSchema,
     cambiarDisponibilidadSchema,
+    cambiarEstadoAdministrativoSchema,
     actualizarLicenciaSchema
 } from "./conductor.schema.js";
 
 import validateSchema from "../../middlewares/validateSchema.js";
+import authMiddleware from "../../middlewares/auth.middleware.js";
+import permisoMiddleware from "../../middlewares/permiso.middleware.js";
 
 const router = Router();
 
-// =========================
-// Crear conductor
-// =========================
 router.post(
     "/",
+    authMiddleware,
+    permisoMiddleware("crear.conductores"),
     validateSchema(crearConductorSchema),
     ConductorController.crear
 );
 
-// =========================
-// Obtener todos los conductores
-// =========================
 router.get(
     "/",
+    authMiddleware,
+    permisoMiddleware("ver.conductores"),
     ConductorController.obtenerTodos
 );
 
-// =========================
-// Obtener conductores disponibles
-// =========================
 router.get(
     "/disponibles",
     ConductorController.obtenerDisponibles
 );
 
-// =========================
-// Obtener conductor por usuario
-// =========================
 router.get(
     "/usuario/:usuarioId",
     ConductorController.obtenerPorUsuario
 );
 
-// =========================
-// Obtener conductor por ID
-// =========================
 router.get(
     "/:id",
+    authMiddleware,
+    permisoMiddleware("ver.conductores"),
     ConductorController.obtenerPorId
 );
 
-// =========================
-// Cambiar disponibilidad
-// =========================
 router.patch(
     "/:id/disponibilidad",
+    authMiddleware,
+    permisoMiddleware("editar.conductores"),
     validateSchema(cambiarDisponibilidadSchema),
     ConductorController.cambiarDisponibilidad
 );
 
-// =========================
-// Actualizar licencia
-// (Más adelante se protegerá con JWT y rol Administrador)
-// =========================
+router.patch(
+    "/:id/estado-administrativo",
+    authMiddleware,
+    permisoMiddleware("editar.conductores"),
+    validateSchema(cambiarEstadoAdministrativoSchema),
+    ConductorController.cambiarEstadoAdministrativo
+);
+
 router.patch(
     "/:id/licencia",
+    authMiddleware,
+    permisoMiddleware("editar.conductores"),
     validateSchema(actualizarLicenciaSchema),
     ConductorController.actualizarLicencia
 );
 
-// =========================
-// Actualizar conductor
-// =========================
 router.put(
     "/:id",
+    authMiddleware,
+    permisoMiddleware("editar.conductores"),
     validateSchema(actualizarConductorSchema),
     ConductorController.actualizar
 );
 
-// =========================
-// Eliminar conductor
-// =========================
 router.delete(
     "/:id",
+    authMiddleware,
+    permisoMiddleware("eliminar.conductores"),
     ConductorController.eliminar
 );
 

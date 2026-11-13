@@ -30,8 +30,8 @@ const vehiculoSchema = new mongoose.Schema(
 
         numeroChasis: {
             type: String,
-            required: [true, "El número de chasis es obligatorio."],
-            unique: true,
+            required: false,
+            default: null,
             trim: true
         },
 
@@ -41,10 +41,160 @@ const vehiculoSchema = new mongoose.Schema(
             trim: true
         },
 
+        anio: {
+            type: Number,
+            required: [true, "El año es obligatorio."]
+        },
+
+        tipoVehiculo: {
+            type: String,
+            required: [true, "El tipo de vehículo es obligatorio."],
+            trim: true
+        },
+
+        numeroPuertas: {
+            type: Number,
+            required: false,
+            default: 4
+        },
+
+        tipoCombustible: {
+            type: String,
+            required: false,
+            default: "Gasolina",
+            trim: true
+        },
+
+        estadoSeguro: {
+            type: String,
+            required: false,
+            default: "Activo",
+            trim: true
+        },
+
+        companiaAseguradora: {
+            type: String,
+            required: false,
+            default: "N/A",
+            trim: true
+        },
+
+        fechaRevisionTecnicoMecanica: {
+            type: Date,
+            default: null
+        },
+
+        fechaVencimientoSoat: {
+            type: Date,
+            default: null
+        },
+
+        fechaVencimientoTecnomecanica: {
+            type: Date,
+            default: null
+        },
+
+        tarjetaPropiedad: {
+            type: String,
+            default: null
+        },
+
+        fotos: {
+            type: [String],
+            default: []
+        },
+
+        foto1: {
+            type: String,
+            default: null
+        },
+
+        foto2: {
+            type: String,
+            default: null
+        },
+
+        foto3: {
+            type: String,
+            default: null
+        },
+
+        gpsRastreo: {
+            type: Boolean,
+            default: false
+        },
+
+        airbags: {
+            type: Boolean,
+            default: false
+        },
+
+        frenosAbs: {
+            type: Boolean,
+            default: false
+        },
+
+        camaraTrasera: {
+            type: Boolean,
+            default: false
+        },
+
+        camaraInterior: {
+            type: Boolean,
+            default: false
+        },
+
+        tarjetaCirculacion: {
+            type: String,
+            default: null
+        },
+
+        seguro: {
+            type: String,
+            default: null
+        },
+
+        verificacion: {
+            type: String,
+            default: null
+        },
+
+        certificadoTecnicoMecanica: {
+            type: String,
+            default: null
+        },
+
+        certificadoSoat: {
+            type: String,
+            default: null
+        },
+
         foto: {
             type: String,
             default: null
         },
+
+        estadoVehiculo: {
+            type: String,
+            enum: ["activo", "en_mantenimiento", "vendido", "inactivo"],
+            default: "activo",
+            trim: true
+        },
+
+        motivoCambioEstado: {
+            type: String,
+            default: null,
+            trim: true
+        },
+
+        historialEstados: [
+            {
+                estadoAnterior: { type: String, default: null },
+                estadoNuevo: { type: String, required: true },
+                motivo: { type: String, default: null },
+                fecha: { type: Date, default: Date.now }
+            }
+        ],
 
         estado: {
             type: Boolean,

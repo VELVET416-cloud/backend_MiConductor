@@ -68,15 +68,19 @@ Esto instalará todas las librerías necesarias.
 
 Crear un archivo llamado `.env` en la raíz del proyecto y agregar las variables correspondientes.
 
-Ejemplo:
+Lo que se tiene que poner:
 
-PORT=3000
-
+PORT=4000
 CLIENT_URL=http://localhost:5173
-
+MOBILE_CLIENT_URL=http://localhost:5173
 JWT_SECRET=miconductor123
-
 MONGO_URI=mongodb+srv://mi_conductor:Mi_conductor2026@miconductor.u0fbedm.mongodb.net/?appName=MiConductor
+FIREBASE_SERVICE_ACCOUNT_PATH=./firebase-credentials.json
+
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USER=miconductor2025@gmail.com
+MAIL_PASSWORD=aelfyaqmerhyfoxr
 ```
 
 ---

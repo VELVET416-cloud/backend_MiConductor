@@ -9,13 +9,17 @@ import vehiculoRoutes from "../../modules/vehiculo/vehiculo.routes.js";
 import conductorRoutes from "../../modules/conductor/conductor.routes.js";
 import solicitudRoutes from "../../modules/solicitud/solicitud.routes.js";
 import novedadRoutes from "../../modules/novedad/novedad.routes.js";
+import invitadoRoutes from "../../modules/invitado/invitado.routes.js";
+import servicioRoutes from "../../modules/servicio/servicio.routes.js";
+import seguimientoRoutes from "../../modules/seguimiento/seguimiento.routes.js";
+import notificacionRoutes from "../../modules/notificacion/notificacion.routes.js";
 
 const router = Router();
 
 router.get("/", (req, res) => {
     res.json({
         success: true,
-        message: "API Mi Conductor funcionando correctamente 🚗"
+        message: "API Mi Conductor funcionando correctamente"
     });
 });
 
@@ -28,5 +32,9 @@ router.use("/vehiculos", vehiculoRoutes);
 router.use("/conductores", conductorRoutes);
 router.use("/solicitudes", solicitudRoutes);
 router.use("/novedades", novedadRoutes);
+router.use("/invitado", invitadoRoutes);
+router.use("/servicios", servicioRoutes);
+router.use("/seguimientos", seguimientoRoutes);
+router.use("/notificaciones", notificacionRoutes);
 
 export default router;

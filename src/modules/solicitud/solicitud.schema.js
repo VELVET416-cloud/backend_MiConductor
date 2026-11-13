@@ -46,15 +46,13 @@ const prioridadSchema = z
     );
 
 const solicitudBaseSchema = z.object({
-
     codigo: z
-        .string({
-            required_error: "El código es obligatorio."
-        })
+        .string()
         .trim()
         .min(3, "El código debe tener al menos 3 caracteres.")
         .max(50, "El código no puede superar los 50 caracteres.")
-        .transform(codigo => codigo.toUpperCase()),
+        .transform(codigo => codigo.toUpperCase())
+        .optional(),
 
     cliente: objectIdSchema,
 
@@ -102,12 +100,23 @@ const solicitudBaseSchema = z.object({
         .min(3, "El destino debe tener al menos 3 caracteres.")
         .max(200, "El destino no puede superar los 200 caracteres."),
 
-    fechaProgramada: z.coerce.date({
-        required_error: "La fecha programada es obligatoria."
-    }),
+    fechaProgramada: z.coerce.date().optional(),
 
-    prioridad: prioridadSchema
+    prioridad: prioridadSchema,
 
+    calificacionConductor: z.number().int().min(1).max(5).optional().nullable(),
+
+    comentarioCliente: z.string().trim().max(1000).optional().nullable(),
+
+    comentarioConductor: z.string().trim().max(1000).optional().nullable(),
+
+    destinoInicial: z.string().trim().optional().nullable(),
+
+    cambioRuta: z.any().optional().nullable(),
+
+    motivo: z.string().trim().optional().nullable(),
+
+    nuevoDestino: z.string().trim().optional().nullable()
 });
 
 export const crearSolicitudSchema = solicitudBaseSchema;
