@@ -25,17 +25,44 @@ const solicitudSchema = new mongoose.Schema(
             default: generarCodigoSolicitud
         },
 
+        esInvitado: {
+            type: Boolean,
+            default: false
+        },
+
+        esParaTercero: {
+            type: Boolean,
+            default: false
+        },
+
+        beneficiario: {
+            type: Object,
+            default: null
+        },
+
+        solicitante: {
+            type: Object,
+            default: null
+        },
+
+        vehiculoInfo: {
+            type: Object,
+            default: null
+        },
+
         cliente: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Cliente",
-            required: [true, "El cliente es obligatorio."]
+            required: false,
+            default: null
         },
 
         correoCliente: {
             type: String,
-            required: [true, "El correo del cliente es obligatorio."],
+            required: false,
             trim: true,
-            lowercase: true
+            lowercase: true,
+            default: null
         },
 
         conductorAsignado: {
@@ -102,6 +129,29 @@ const solicitudSchema = new mongoose.Schema(
             uppercase: true
         },
 
+        destinoInicial: {
+            type: String,
+            trim: true,
+            default: null
+        },
+
+        cambioRuta: {
+            motivo: {
+                type: String,
+                trim: true,
+                default: null
+            },
+            nuevoDestino: {
+                type: String,
+                trim: true,
+                default: null
+            },
+            fechaCambio: {
+                type: Date,
+                default: null
+            }
+        },
+
         calificacionConductor: {
             type: Number,
             min: 1,
@@ -129,7 +179,7 @@ const solicitudSchema = new mongoose.Schema(
     }
 );
 
-solicitudSchema.index({ codigo: 1 }, { unique: true });
+// solicitudSchema.index({ codigo: 1 }, { unique: true }); // Definido en campo
 
 const Solicitud = mongoose.model("Solicitud", solicitudSchema);
 

@@ -1,6 +1,8 @@
 import { Router } from "express";
 
 import SolicitudController from "./solicitud.controller.js";
+import InvitadoController from "../invitado/invitado.controller.js";
+import { validarCrearSolicitudInvitado } from "../invitado/invitado.validation.js";
 
 import {
     validarCrearSolicitud,
@@ -8,13 +10,27 @@ import {
     validarAsignarConductor
 } from "./solicitud.validation.js";
 
+import authMiddleware from "../../middlewares/auth.middleware.js";
+import permisoMiddleware from "../../middlewares/permiso.middleware.js";
+
 const router = Router();
 
 // ======================================================
-// Crear solicitud
+// Crear solicitud como invitado (Pública / Sin token)
+// ======================================================
+router.post(
+    "/invitado",
+    validarCrearSolicitudInvitado,
+    InvitadoController.crearSolicitud
+);
+
+// ======================================================
+// Crear solicitud desde el panel
 // ======================================================
 router.post(
     "/",
+    authMiddleware,
+    permisoMiddleware("crear.solicitudes"),
     validarCrearSolicitud,
     SolicitudController.crear
 );
@@ -24,6 +40,8 @@ router.post(
 // ======================================================
 router.get(
     "/",
+    authMiddleware,
+    permisoMiddleware("ver.solicitudes"),
     SolicitudController.obtenerTodos
 );
 
@@ -32,6 +50,8 @@ router.get(
 // ======================================================
 router.get(
     "/:id",
+    authMiddleware,
+    permisoMiddleware("ver.solicitudes"),
     SolicitudController.obtenerPorId
 );
 
@@ -40,6 +60,8 @@ router.get(
 // ======================================================
 router.patch(
     "/:id/asignar-conductor",
+    authMiddleware,
+    permisoMiddleware("asignar.solicitudes"),
     validarAsignarConductor,
     SolicitudController.asignarConductor
 );
@@ -49,6 +71,8 @@ router.patch(
 // ======================================================
 router.patch(
     "/:id/cancelar",
+    authMiddleware,
+    permisoMiddleware("cancelar.solicitudes"),
     SolicitudController.cancelar
 );
 
@@ -57,6 +81,7 @@ router.patch(
 // ======================================================
 router.patch(
     "/:id/completar",
+    authMiddleware,
     SolicitudController.completar
 );
 
@@ -65,6 +90,7 @@ router.patch(
 // ======================================================
 router.patch(
     "/:id/calificar",
+    authMiddleware,
     SolicitudController.calificar
 );
 
@@ -73,6 +99,7 @@ router.patch(
 // ======================================================
 router.put(
     "/:id",
+    authMiddleware,
     validarActualizarSolicitud,
     SolicitudController.actualizar
 );

@@ -234,6 +234,29 @@ class NovedadService {
 
         const novedad = await NovedadRepository.crear(datos);
 
+        // Si la novedad es CAMBIO_RUTA y tiene solicitud, actualizar destinoInicial y nuevo destino en la Solicitud
+        if (datos.tipo === "CAMBIO_RUTA" && datos.solicitud) {
+            try {
+                const destinoNuevo = datos.rutaNueva?.destino || datos.nuevoDestino || datos.ubicacion?.direccion;
+                if (destinoNuevo) {
+                    const solActual = await SolicitudRepository.obtenerPorId(datos.solicitud);
+                    if (solActual) {
+                        await SolicitudRepository.actualizar(datos.solicitud, {
+                            destino: destinoNuevo,
+                            destinoInicial: solActual.destinoInicial || solActual.destino,
+                            cambioRuta: {
+                                motivo: datos.descripcion || datos.titulo || "Cambio de ruta por novedad",
+                                nuevoDestino: destinoNuevo,
+                                fechaCambio: new Date()
+                            }
+                        });
+                    }
+                }
+            } catch (errActualizar) {
+                console.error("[NovedadService] Error al actualizar destino en solicitud:", errActualizar.message);
+            }
+        }
+
         notificacionEventBus.emit(NOTIFICACION_EVENTOS.NOVEDAD_REPORTADA, novedad);
 
         return await NovedadRepository.obtenerPorId(novedad._id);

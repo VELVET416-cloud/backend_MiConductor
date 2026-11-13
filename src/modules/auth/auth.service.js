@@ -47,20 +47,40 @@ class AuthService {
             );
         }
 
-        if (usuario.rol.nombre !== "ADMINISTRADOR") {
+        const rolNombre = usuario.rol?.nombre || "";
+        const permisos = Array.isArray(usuario.rol?.permisos) ? usuario.rol.permisos : [];
+        if (rolNombre === "CLIENTE" || (rolNombre !== "ADMINISTRADOR" && permisos.length === 0)) {
             throw new AppError(
-                "Este usuario no tiene acceso al panel administrativo.",
+                "Este usuario no tiene acceso al panel administrativo o no cuenta con permisos asignados.",
                 403
             );
         }
 
+        const codigosPermisos = permisos.map(p => typeof p === "string" ? p : (p.codigo || "")).filter(Boolean);
         const token = jwt.sign(
-            { id: usuario._id },
+            {
+                id: usuario._id,
+                nombre: usuario.nombre,
+                apellido: usuario.apellido,
+                correo: usuario.correo,
+                rol: rolNombre,
+                permisos: codigosPermisos
+            },
             env.JWT_SECRET,
             { expiresIn: "8h" }
         );
 
-        return { token };
+        return {
+            token,
+            usuario: {
+                id: usuario._id,
+                nombre: usuario.nombre,
+                apellido: usuario.apellido,
+                correo: usuario.correo,
+                rol: rolNombre,
+                permisos: codigosPermisos
+            }
+        };
     }
 
     async mobileLogin(datos) {

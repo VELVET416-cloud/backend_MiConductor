@@ -109,14 +109,20 @@ class UsuarioHelper {
             );
         }
 
-        const salt =
-            await bcrypt.genSalt(10);
+        if (!datos.password) {
+            const token = crypto.randomBytes(32).toString("hex");
+            datos.activationToken = token;
+            datos.activationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+            datos.isActivated = false;
 
-        datos.password =
-            await bcrypt.hash(
-                datos.password,
-                salt
-            );
+            const tempPassword = crypto.randomBytes(24).toString("hex");
+            const salt = await bcrypt.genSalt(10);
+            datos.password = await bcrypt.hash(tempPassword, salt);
+        } else {
+            const salt = await bcrypt.genSalt(10);
+            datos.password = await bcrypt.hash(datos.password, salt);
+            datos.isActivated = true;
+        }
 
 
 
