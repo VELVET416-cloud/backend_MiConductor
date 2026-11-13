@@ -102,8 +102,9 @@ class UsuarioController {
         try {
 
             const { id } = req.params;
+            const currentUserId = req.user?.id;
 
-            await UsuarioService.eliminar(id);
+            await UsuarioService.eliminar(id, currentUserId);
 
             return successResponse(
                 res,

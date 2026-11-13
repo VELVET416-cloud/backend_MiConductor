@@ -24,7 +24,7 @@ const startServer = async () => {
 
   registerSocketEvents(io);
 
-  server.listen(env.PORT, () => {
+  server.listen(env.PORT, "0.0.0.0", () => {
     console.log(`🚀 Servidor ejecutándose en el puerto ${env.PORT}`);
   });
 };
@@ -40,3 +40,4 @@ process.on("exit", (code) => {
 });
 
 startServer();
+

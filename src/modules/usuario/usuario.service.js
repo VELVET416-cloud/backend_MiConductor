@@ -1,25 +1,31 @@
 import mongoose from "mongoose";
-
 import UsuarioRepository from "./usuario.repository.js";
 import UsuarioHelper from "./usuario.helper.js";
 import ClienteRepository from "../cliente/cliente.repository.js";
 import VehiculoRepository from "../vehiculo/vehiculo.repository.js";
 import AppError from "../../utils/AppError.js";
+import EmailService from "../auth/email.service.js";
+import ConductorRepository from "../conductor/conductor.repository.js";
 
 class UsuarioService {
 
-    // Crear usuario
     async crear(datos) {
+        const usuario = await UsuarioHelper.crear(datos);
+        // Enviar correo de activación de cuenta en segundo plano (asíncrono) para evitar bloqueos/timeouts en el cliente
+        const nombreActivacion = `${usuario.nombre || ""} ${usuario.apellido || ""}`.trim() || usuario.nombreCompleto || "Usuario";
+        EmailService.enviarCorreoActivacion(
+            usuario.correo,
+            nombreActivacion,
+            usuario.activationToken
+        ).catch((mailErr) => {
+            console.error("[UsuarioService] Error enviando correo de activación:", mailErr.message);
+        });
 
-        return await UsuarioHelper.crear(datos);
-
+        return usuario;
     }
 
-    // Obtener todos
     async obtenerTodos() {
-
         return await UsuarioRepository.obtenerTodos();
-
     }
 
     // Consultar usuario por documento (público / sanitizado), incluyendo sus vehículos
@@ -89,67 +95,71 @@ class UsuarioService {
         };
     }
 
-    // Obtener por ID
     async obtenerPorId(id) {
-
         if (!mongoose.Types.ObjectId.isValid(id)) {
+            throw new AppError("El id del usuario no es válido.", 400);
+        }
+        const usuario = await UsuarioRepository.obtenerPorId(id);
+        if (!usuario) {
+            throw new AppError("Usuario no encontrado.", 404);
+        }
+        return usuario;
+    }
+
+    async actualizar(id, datos) {
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            throw new AppError("El id del usuario no es válido.", 400);
+        }
+        return await UsuarioHelper.actualizar(id, datos);
+    }
+
+    async eliminar(id, currentUserId = null) {
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            throw new AppError("El id del usuario no es válido.", 400);
+        }
+
+        if (currentUserId && id.toString() === currentUserId.toString()) {
             throw new AppError(
-                "El id del usuario no es válido.",
+                "No puedes eliminar la cuenta con la que has iniciado sesión actualmente.",
                 400
             );
         }
 
         const usuario = await UsuarioRepository.obtenerPorId(id);
-
         if (!usuario) {
-            throw new AppError(
-                "Usuario no encontrado.",
-                404
-            );
+            throw new AppError("Usuario no encontrado.", 404);
         }
 
-        return usuario;
+        // Verificar si tiene dependencias asociadas en Conductor
+        try {
+            const conductor = await ConductorRepository.obtenerPorUsuario(id);
+            if (conductor) {
+                throw new AppError(
+                    "No se puede eliminar permanentemente este usuario porque tiene un perfil de Conductor asociado. Desactiva su cuenta en lugar de eliminarla para preservar el historial.",
+                    400
+                );
+            }
+        } catch (e) {
+            if (e.statusCode === 400) throw e;
+        }
 
+        // Verificar si tiene dependencias asociadas en Cliente
+        try {
+            const cliente = await ClienteRepository.obtenerPorUsuario(id);
+            if (cliente) {
+                throw new AppError(
+                    "No se puede eliminar permanentemente este usuario porque tiene un perfil de Cliente asociado. Desactiva su cuenta en lugar de eliminarla para preservar el historial.",
+                    400
+                );
+            }
+        } catch (e) {
+            if (e.statusCode === 400) throw e;
+        }
+
+        // Eliminación física real en MongoDB
+        await UsuarioRepository.eliminarFisico(id);
+        return true;
     }
-
-    // Actualizar usuario
-    async actualizar(id, datos) {
-
-        if (!mongoose.Types.ObjectId.isValid(id)) {
-            throw new AppError(
-                "El id del usuario no es válido.",
-                400
-            );
-        }
-
-        return await UsuarioHelper.actualizar(
-            id,
-            datos
-        );
-
-    }
-
-    // Eliminar usuario
-    async eliminar(id) {
-        if (!mongoose.Types.ObjectId.isValid(id)) {
-            throw new AppError(
-                "El id del usuario no es válido.",
-                400
-            );
-        }
-
-        const usuario = await UsuarioRepository.eliminar(id);
-
-        if (!usuario) {
-            throw new AppError(
-                "Usuario no encontrado.",
-                404
-            );
-        }
-
-        return usuario;
-    }
-
 }
 
 export default new UsuarioService();

@@ -2,6 +2,11 @@ import mongoose from "mongoose";
 
 const usuarioSchema = new mongoose.Schema(
     {
+        nombreCompleto: {
+            type: String,
+            trim: true
+        },
+
         nombre: {
             type: String,
             required: [true, "El nombre es obligatorio."],
@@ -40,6 +45,16 @@ const usuarioSchema = new mongoose.Schema(
             trim: true
         },
 
+        fechaNacimiento: {
+            type: Date,
+            default: null
+        },
+
+        edad: {
+            type: Number,
+            default: null
+        },
+
         password: {
             type: String,
             required: [true, "La contraseña es obligatoria."],
@@ -62,6 +77,23 @@ const usuarioSchema = new mongoose.Schema(
             type: String,
             required: [true, "El teléfono es obligatorio."],
             trim: true
+        },
+
+        isActivated: {
+            type: Boolean,
+            default: false
+        },
+
+        activationToken: {
+            type: String,
+            default: null,
+            select: false
+        },
+
+        activationTokenExpires: {
+            type: Date,
+            default: null,
+            select: false
         },
 
         estado: {

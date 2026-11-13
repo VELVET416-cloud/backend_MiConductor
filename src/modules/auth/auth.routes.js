@@ -60,4 +60,7 @@ router.post(
     AuthController.register
 );
 
+router.get("/verify-activation-token", AuthController.verifyActivationToken);
+router.post("/activate-account", AuthController.activateAccount);
+
 export default router;

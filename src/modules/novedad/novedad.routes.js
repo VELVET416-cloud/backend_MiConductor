@@ -9,6 +9,8 @@ import {
 } from "./novedades.validation.js";
 
 import validateSchema from "../../middlewares/validateSchema.js";
+import authMiddleware from "../../middlewares/auth.middleware.js";
+import permisoMiddleware from "../../middlewares/permiso.middleware.js";
 
 const router = Router();
 
@@ -17,6 +19,8 @@ const router = Router();
 // ======================================================
 router.post(
     "/",
+    authMiddleware,
+    permisoMiddleware("crear.novedades"),
     validateSchema(crearNovedadSchema),
     NovedadController.crear
 );
@@ -26,6 +30,8 @@ router.post(
 // ======================================================
 router.get(
     "/",
+    authMiddleware,
+    permisoMiddleware("ver.novedades"),
     NovedadController.obtenerTodos
 );
 
@@ -50,6 +56,8 @@ router.get(
 // ======================================================
 router.get(
     "/:id",
+    authMiddleware,
+    permisoMiddleware("ver.novedades"),
     NovedadController.obtenerPorId
 );
 
@@ -58,6 +66,8 @@ router.get(
 // ======================================================
 router.patch(
     "/:id/estado",
+    authMiddleware,
+    permisoMiddleware("editar.novedades"),
     validateSchema(cambiarEstadoNovedadSchema),
     NovedadController.cambiarEstado
 );
@@ -67,6 +77,8 @@ router.patch(
 // ======================================================
 router.put(
     "/:id",
+    authMiddleware,
+    permisoMiddleware("editar.novedades"),
     validateSchema(actualizarNovedadSchema),
     NovedadController.actualizar
 );
@@ -76,6 +88,8 @@ router.put(
 // ======================================================
 router.delete(
     "/:id",
+    authMiddleware,
+    permisoMiddleware("eliminar.novedades"),
     NovedadController.eliminar
 );
 

@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import bcrypt from "bcrypt";
 
 import UsuarioRepository from "./usuario.repository.js";
@@ -13,6 +14,12 @@ import {
 class UsuarioHelper {
 
     async crear(datos, nombreRol) {
+
+        if (datos.nombreCompleto && (!datos.nombre || !datos.apellido)) {
+            const parts = datos.nombreCompleto.trim().split(/\s+/);
+            datos.nombre = parts[0] || "";
+            datos.apellido = parts.slice(1).join(" ") || parts[0] || "";
+        }
 
         datos.nombre =
             datos.nombre.trim();
@@ -40,6 +47,13 @@ class UsuarioHelper {
             datos.correo
                 .trim()
                 .toLowerCase();
+
+        if (datos.fechaNacimiento) {
+            datos.fechaNacimiento = new Date(datos.fechaNacimiento);
+        }
+        if (datos.edad !== undefined && datos.edad !== null && datos.edad !== "") {
+            datos.edad = Number(datos.edad);
+        }
 
         datos.telefono =
             datos.telefono.trim();
@@ -95,14 +109,20 @@ class UsuarioHelper {
             );
         }
 
-        const salt =
-            await bcrypt.genSalt(10);
+        if (!datos.password) {
+            const token = crypto.randomBytes(32).toString("hex");
+            datos.activationToken = token;
+            datos.activationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+            datos.isActivated = false;
 
-        datos.password =
-            await bcrypt.hash(
-                datos.password,
-                salt
-            );
+            const tempPassword = crypto.randomBytes(24).toString("hex");
+            const salt = await bcrypt.genSalt(10);
+            datos.password = await bcrypt.hash(tempPassword, salt);
+        } else {
+            const salt = await bcrypt.genSalt(10);
+            datos.password = await bcrypt.hash(datos.password, salt);
+            datos.isActivated = true;
+        }
 
 
 
@@ -179,6 +199,13 @@ class UsuarioHelper {
                     .trim()
                     .toLowerCase();
 
+        }
+
+        if (datos.fechaNacimiento !== undefined) {
+            datos.fechaNacimiento = datos.fechaNacimiento ? new Date(datos.fechaNacimiento) : null;
+        }
+        if (datos.edad !== undefined) {
+            datos.edad = (datos.edad !== null && datos.edad !== "") ? Number(datos.edad) : null;
         }
 
         if (datos.telefono) {

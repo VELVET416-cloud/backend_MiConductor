@@ -98,6 +98,33 @@ class AuthRepository {
 
     }
 
+
+    async obtenerPorTokenActivacion(token) {
+        return await Usuario.findOne({
+            activationToken: token,
+            activationTokenExpires: {
+                $gt: new Date()
+            }
+        })
+            .select("+password +activationToken +activationTokenExpires")
+            .populate("rol", "nombre");
+    }
+
+    async activarCuenta(id, passwordHash) {
+        return await Usuario.findByIdAndUpdate(
+            id,
+            {
+                password: passwordHash,
+                isActivated: true,
+                estado: true,
+                activationToken: null,
+                activationTokenExpires: null
+            },
+            {
+                new: true
+            }
+        );
+    }
 }
 
 export default new AuthRepository();

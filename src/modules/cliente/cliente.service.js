@@ -1,3 +1,4 @@
+import EmailService from "../auth/email.service.js";
 import mongoose from "mongoose";
 
 import ClienteRepository from "./cliente.repository.js";
@@ -7,7 +8,6 @@ import AppError from "../../utils/AppError.js";
 import RolRepository from "../rol/rol.repository.js";
 import VehiculoRepository from "../vehiculo/vehiculo.repository.js";
 import SolicitudRepository from "../solicitud/solicitud.repository.js";
-import EmailService from "../auth/email.service.js";
 
 class ClienteService {
 
@@ -16,7 +16,6 @@ class ClienteService {
     // ======================================================
 
     async crear(datos) {
-
         datos.direccion = datos.direccion.trim();
 
         // Si no se proporcionó contraseña, se asigna el número de documento como contraseña inicial
@@ -54,12 +53,23 @@ class ClienteService {
         });
 
         try {
-
             // Crear registro de Cliente con referencia al usuario creado
             const cliente = await ClienteRepository.crear({
                 usuario: usuario._id,
                 direccion: datos.direccion
             });
+
+            // Enviar correo al cliente con sus credenciales de acceso
+            try {
+                await EmailService.enviarCredencialesNuevoUsuario({
+                    correo: usuario.correo,
+                    nombre: `${usuario.nombre || ""} ${usuario.apellido || ""}`.trim(),
+                    password: usuario.plainPassword,
+                    rol: "Cliente"
+                });
+            } catch (mailErr) {
+                console.error("[ClienteService] Error enviando correo:", mailErr.message);
+            }
 
             const clienteCompleto = await ClienteRepository.obtenerPorId(cliente._id);
 
@@ -80,9 +90,7 @@ class ClienteService {
             return clienteCompleto;
 
         } catch (error) {
-
-            // Si falla la creación del cliente,
-            // eliminar el usuario que acabamos de crear
+            // Si falla la creación del cliente, eliminar el usuario que acabamos de crear
             await UsuarioHelper.eliminar(
                 usuario._id
             );
@@ -96,9 +104,7 @@ class ClienteService {
     // ======================================================
 
     async obtenerTodos(page, limit, search, estado) {
-
         return await ClienteRepository.obtenerTodos(page, limit, search, estado);
-
     }
 
     // ======================================================
@@ -110,34 +116,51 @@ class ClienteService {
     }
 
     // ======================================================
+    // OBTENER POR USUARIO
+    // ======================================================
+
+    async obtenerPorUsuario(usuarioId) {
+        if (!mongoose.Types.ObjectId.isValid(usuarioId)) {
+            throw new AppError(
+                "El id del usuario no es válido.",
+                400
+            );
+        }
+
+        const cliente = await ClienteRepository.obtenerPorUsuario(usuarioId);
+
+        if (!cliente) {
+            throw new AppError(
+                "Cliente no encontrado para este usuario.",
+                404
+            );
+        }
+
+        return cliente;
+    }
+
+    // ======================================================
     // OBTENER POR ID
     // ======================================================
 
     async obtenerPorId(id) {
-
         if (!mongoose.Types.ObjectId.isValid(id)) {
-
             throw new AppError(
                 "El id del cliente no es válido.",
                 400
             );
-
         }
 
-        const cliente =
-            await ClienteRepository.obtenerPorId(id);
+        const cliente = await ClienteRepository.obtenerPorId(id);
 
         if (!cliente) {
-
             throw new AppError(
                 "Cliente no encontrado.",
                 404
             );
-
         }
 
         return cliente;
-
     }
 
     // ======================================================
@@ -145,40 +168,30 @@ class ClienteService {
     // ======================================================
 
     async actualizar(id, datos) {
-
         if (!mongoose.Types.ObjectId.isValid(id)) {
-
             throw new AppError(
                 "El id del cliente no es válido.",
                 400
             );
-
         }
 
-        const cliente =
-            await ClienteRepository.obtenerPorId(id);
+        const cliente = await ClienteRepository.obtenerPorId(id);
 
         if (!cliente) {
-
             throw new AppError(
                 "Cliente no encontrado.",
                 404
             );
-
         }
 
         if (datos.direccion) {
-
-            datos.direccion =
-                datos.direccion.trim();
-
+            datos.direccion = datos.direccion.trim();
         }
 
         return await ClienteRepository.actualizar(
             id,
             datos
         );
-
     }
 
     // ======================================================
@@ -186,26 +199,20 @@ class ClienteService {
     // ======================================================
 
     async eliminar(id) {
-
         if (!mongoose.Types.ObjectId.isValid(id)) {
-
             throw new AppError(
                 "El id del cliente no es válido.",
                 400
             );
-
         }
 
-        const cliente =
-            await ClienteRepository.obtenerPorId(id);
+        const cliente = await ClienteRepository.obtenerPorId(id);
 
         if (!cliente) {
-
             throw new AppError(
                 "Cliente no encontrado.",
                 404
             );
-
         }
 
         const vehiculos = await VehiculoRepository.obtenerPorCliente(id);
