@@ -27,7 +27,7 @@ router.post(
 router.get(
     "/",
     authMiddleware,
-    permisoMiddleware("ver.conductores"),
+    permisoMiddleware("ver.conductores", "crear.conductores", "editar.conductores", "asignar.solicitudes", "crear.novedades"),
     ConductorController.obtenerTodos
 );
 
@@ -44,7 +44,7 @@ router.get(
 router.get(
     "/:id",
     authMiddleware,
-    permisoMiddleware("ver.conductores"),
+    permisoMiddleware("ver.conductores", "editar.conductores", "ver.solicitudes", "ver.novedades"),
     ConductorController.obtenerPorId
 );
 

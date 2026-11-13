@@ -30,7 +30,7 @@ router.post(
 router.get(
     "/",
     authMiddleware,
-    permisoMiddleware("ver.roles"),
+    permisoMiddleware("ver.roles", "crear.roles", "editar.roles", "ver.usuarios", "crear.usuarios", "editar.usuarios"),
     rolController.obtenerTodos
 );
 
@@ -40,7 +40,7 @@ router.get(
 router.get(
     "/:id",
     authMiddleware,
-    permisoMiddleware("ver.roles"),
+    permisoMiddleware("ver.roles", "editar.roles"),
     rolController.obtenerPorId
 );
 

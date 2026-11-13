@@ -17,6 +17,19 @@ class AuthController {
         }
     }
 
+    async me(req, res, next) {
+        try {
+            const resultado = await AuthService.obtenerPerfilActual(req.user?.id);
+            return successResponse(
+                res,
+                resultado,
+                "Perfil de usuario autenticado obtenido correctamente."
+            );
+        } catch (error) {
+            next(error);
+        }
+    }
+
     async mobileLogin(req, res, next) {
         try {
             const resultado = await AuthService.mobileLogin(req.body);

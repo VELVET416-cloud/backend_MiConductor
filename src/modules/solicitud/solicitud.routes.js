@@ -41,7 +41,7 @@ router.post(
 router.get(
     "/",
     authMiddleware,
-    permisoMiddleware("ver.solicitudes"),
+    permisoMiddleware("ver.solicitudes", "crear.solicitudes", "asignar.solicitudes", "ruta.solicitudes", "cancelar.solicitudes", "crear.novedades"),
     SolicitudController.obtenerTodos
 );
 
@@ -51,7 +51,7 @@ router.get(
 router.get(
     "/:id",
     authMiddleware,
-    permisoMiddleware("ver.solicitudes"),
+    permisoMiddleware("ver.solicitudes", "asignar.solicitudes", "ruta.solicitudes", "cancelar.solicitudes"),
     SolicitudController.obtenerPorId
 );
 
@@ -100,6 +100,7 @@ router.patch(
 router.put(
     "/:id",
     authMiddleware,
+    permisoMiddleware("editar.solicitudes", "asignar.solicitudes", "cancelar.solicitudes", "crear.solicitudes"),
     validarActualizarSolicitud,
     SolicitudController.actualizar
 );

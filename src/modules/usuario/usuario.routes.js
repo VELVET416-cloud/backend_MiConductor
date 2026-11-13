@@ -36,23 +36,41 @@ router.get(
 router.get(
     "/",
     authMiddleware,
-    permisoMiddleware("ver.usuarios"),
+    permisoMiddleware("ver.usuarios", "crear.usuarios", "editar.usuarios"),
     UsuarioController.obtenerTodos
 );
 
-// Obtener usuario por ID
+// Obtener usuario por ID (permite ver el propio perfil o tener permiso de usuarios)
 router.get(
     "/:id",
     authMiddleware,
-    permisoMiddleware("ver.usuarios"),
+    (req, res, next) => {
+        if (String(req.user?.id) === String(req.params.id)) {
+            return next();
+        }
+        return permisoMiddleware("ver.usuarios", "editar.usuarios")(req, res, next);
+    },
     UsuarioController.obtenerPorId
 );
 
-// Actualizar usuario
+// Actualizar usuario (permite actualizar el propio perfil o tener permiso de editar.usuarios)
 router.put(
     "/:id",
     authMiddleware,
-    permisoMiddleware("editar.usuarios"),
+    (req, res, next) => {
+        const esPropioPerfil = String(req.user?.id) === String(req.params.id);
+        const esAdmin = req.user?.rol === "ADMINISTRADOR";
+        const puedeEditarUsuarios = esAdmin || (req.user?.permisos || []).includes("editar.usuarios");
+
+        if (esPropioPerfil && !puedeEditarUsuarios) {
+            if (req.body) {
+                delete req.body.rol;
+                delete req.body.estado;
+            }
+            return next();
+        }
+        return permisoMiddleware("editar.usuarios")(req, res, next);
+    },
     validateSchema(actualizarUsuarioSchema),
     UsuarioController.actualizar
 );

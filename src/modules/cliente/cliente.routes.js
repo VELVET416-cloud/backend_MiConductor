@@ -26,7 +26,7 @@ router.post(
 router.get(
     "/",
     authMiddleware,
-    permisoMiddleware("ver.clientes"),
+    permisoMiddleware("ver.clientes", "crear.clientes", "editar.clientes", "crear.vehiculos", "editar.vehiculos", "crear.solicitudes"),
     ClienteController.obtenerTodos
 );
 
@@ -34,7 +34,7 @@ router.get(
 router.get(
     "/lista",
     authMiddleware,
-    permisoMiddleware("ver.clientes"),
+    permisoMiddleware("ver.clientes", "crear.clientes", "editar.clientes", "crear.vehiculos", "editar.vehiculos", "crear.solicitudes"),
     ClienteController.obtenerLista
 );
 
@@ -48,7 +48,7 @@ router.get(
 router.get(
     "/:id",
     authMiddleware,
-    permisoMiddleware("ver.clientes"),
+    permisoMiddleware("ver.clientes", "editar.clientes", "ver.vehiculos", "ver.solicitudes"),
     ClienteController.obtenerPorId
 );
 

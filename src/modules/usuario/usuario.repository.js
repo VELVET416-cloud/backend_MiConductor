@@ -11,7 +11,15 @@ class UsuarioRepository {
     // Incluye activos e inactivos
     async obtenerTodos() {
         return await Usuario.find({})
-            .populate("rol", "nombre descripcion")
+            .populate({
+                path: "rol",
+                select: "nombre descripcion activo esSistema permisos",
+                populate: {
+                    path: "permisos",
+                    select: "nombre codigo modulo descripcion activo",
+                    match: { activo: true }
+                }
+            })
             .sort({ createdAt: -1 });
     }
 
@@ -19,7 +27,15 @@ class UsuarioRepository {
     async obtenerPorId(id) {
         return await Usuario.findOne({
             _id: id
-        }).populate("rol", "nombre descripcion");
+        }).populate({
+            path: "rol",
+            select: "nombre descripcion activo esSistema permisos",
+            populate: {
+                path: "permisos",
+                select: "nombre codigo modulo descripcion activo",
+                match: { activo: true }
+            }
+        });
     }
 
     // Obtener usuario por correo
@@ -67,7 +83,15 @@ class UsuarioRepository {
                 new: true,
                 runValidators: true
             }
-        ).populate("rol", "nombre descripcion");
+        ).populate({
+            path: "rol",
+            select: "nombre descripcion activo esSistema permisos",
+            populate: {
+                path: "permisos",
+                select: "nombre codigo modulo descripcion activo",
+                match: { activo: true }
+            }
+        });
     }
 
     // Eliminar usuario

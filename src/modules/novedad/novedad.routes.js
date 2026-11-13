@@ -31,7 +31,7 @@ router.post(
 router.get(
     "/",
     authMiddleware,
-    permisoMiddleware("ver.novedades"),
+    permisoMiddleware("ver.novedades", "crear.novedades", "editar.novedades"),
     NovedadController.obtenerTodos
 );
 
@@ -57,7 +57,7 @@ router.get(
 router.get(
     "/:id",
     authMiddleware,
-    permisoMiddleware("ver.novedades"),
+    permisoMiddleware("ver.novedades", "editar.novedades"),
     NovedadController.obtenerPorId
 );
 
