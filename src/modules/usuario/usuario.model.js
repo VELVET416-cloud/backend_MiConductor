@@ -96,6 +96,22 @@ const usuarioSchema = new mongoose.Schema(
             select: false
         },
 
+        fechaNacimiento: {
+            type: Date,
+            default: null,
+        },
+
+        edad: {
+            type: Number,
+            default: null,
+        },
+
+        foto: {
+            type: String,
+            default: null,
+            trim: true
+        },
+
         estado: {
             type: Boolean,
             default: true

@@ -7,6 +7,10 @@ import { registerSocketEvents } from "./sockets/index.js";
 
 import { seedRoles } from "./seeders/rol.seeder.js";
 import { seedPermisos } from "./seeders/permiso.seeder.js";
+import { seedClientes } from "./seeders/cliente.seeder.js";
+import { seedConductores } from "./seeders/conductor.seeder.js";
+import { seedSolicitudes } from "./seeders/solicitud.seeder.js";
+import { seedNovedades } from "./seeders/novedad.seeder.js";
 import { initNotificacionListeners } from "./modules/notificacion/notificacion.listener.js";
 import initFirebase from "./config/firebase.js";
 
@@ -14,6 +18,10 @@ const startServer = async () => {
   await connectDB();
   await seedPermisos();
   await seedRoles();
+  await seedClientes();
+  await seedConductores();
+  await seedSolicitudes();
+  await seedNovedades();
 
   initFirebase();
   initNotificacionListeners();

@@ -102,6 +102,39 @@ export function validateDocumentoPorTipo(val, tipoDoc) {
     return "";
 }
 
+export function validateMayorDeEdad(fechaNacimiento) {
+    if (!fechaNacimiento) return "La fecha de nacimiento es obligatoria.";
+    const fecha = new Date(fechaNacimiento);
+    if (isNaN(fecha.getTime())) return "Fecha de nacimiento inválida.";
+    const hoy = new Date();
+    if (fecha > hoy) return "La fecha de nacimiento no puede ser futura.";
+    let edad = hoy.getFullYear() - fecha.getFullYear();
+    const m = hoy.getMonth() - fecha.getMonth();
+    if (m < 0 || (m === 0 && hoy.getDate() < fecha.getDate())) {
+        edad--;
+    }
+    if (edad < 18) {
+        return `El cliente debe ser mayor de edad (mínimo 18 años). Edad actual: ${edad} años.`;
+    }
+    if (edad > 120) {
+        return "Fecha de nacimiento inválida.";
+    }
+    return "";
+}
+
+export function calcularEdadNumero(fechaNacimiento) {
+    if (!fechaNacimiento) return null;
+    const fecha = new Date(fechaNacimiento);
+    if (isNaN(fecha.getTime())) return null;
+    const hoy = new Date();
+    let edad = hoy.getFullYear() - fecha.getFullYear();
+    const m = hoy.getMonth() - fecha.getMonth();
+    if (m < 0 || (m === 0 && hoy.getDate() < fecha.getDate())) {
+        edad--;
+    }
+    return edad >= 0 && edad <= 120 ? edad : null;
+}
+
 const crearClienteSchema = z
     .object({
         nombre: z
@@ -152,11 +185,12 @@ const crearClienteSchema = z
             .min(1, "El correo es obligatorio.")
             .regex(EMAIL_REGEX, "Debe ingresar un correo válido."),
 
-    password: z
-        .string({
-            required_error: "La contraseña es obligatoria."
-        })
-        .min(6),
+        password: z
+            .string({
+                required_error: "La contraseña es obligatoria."
+            })
+            .min(6)
+            .optional(),
 
         telefono: z
             .string({
@@ -177,11 +211,24 @@ const crearClienteSchema = z
             .min(5, "La dirección debe tener al menos 5 caracteres.")
             .max(200, "La dirección no puede superar los 200 caracteres."),
 
+        fechaNacimiento: z.string().trim().optional(),
+        edad: z.number().nullable().optional(),
+
+        foto: z.string().nullable().optional(),
+
         rol: z.string().optional(),
         rolId: z.string().optional()
     })
     .superRefine((data, ctx) => {
         const tipoNorm = normalizeTipoDocumento(data.tipoDocumento);
+        if (tipoNorm === "TI") {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["tipoDocumento"],
+                message: "La Tarjeta de Identidad (TI) es solo para menores de edad. Los clientes deben ser mayores de edad (mínimo 18 años)."
+            });
+        }
+
         if (!ALLOWED_DOCUMENT_TYPES.includes(tipoNorm)) {
             return;
         }
@@ -194,28 +241,97 @@ const crearClienteSchema = z
                 message: docErr
             });
         }
+
+        if (data.fechaNacimiento) {
+            const edadErr = validateMayorDeEdad(data.fechaNacimiento);
+            if (edadErr) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: ["fechaNacimiento"],
+                    message: edadErr
+                });
+            }
+        }
     })
     .transform((data) => {
         const tipoDocumento = normalizeTipoDocumento(data.tipoDocumento);
         const documento = normalizeDocumento(data.documento, tipoDocumento);
+        const edad = data.edad ?? calcularEdadNumero(data.fechaNacimiento);
         return {
             ...data,
             tipoDocumento,
             documento,
+            edad,
             correo: data.correo.trim().toLowerCase()
         };
     });
 
-const actualizarClienteSchema = z.object({
-    direccion: z
-        .string()
-        .trim()
-        .min(5)
-        .max(200)
-        .optional(),
+const actualizarClienteSchema = z
+    .object({
+        direccion: z
+            .string()
+            .trim()
+            .min(5, "La dirección debe tener al menos 5 caracteres.")
+            .max(200)
+            .optional(),
 
-    estado: z.boolean().optional()
-});
+        foto: z.string().nullable().optional(),
+
+        nombre: z.string().trim().min(2, "El nombre debe tener al menos 2 caracteres.").max(100).optional(),
+        apellido: z.string().trim().min(2, "El apellido debe tener al menos 2 caracteres.").max(100).optional(),
+        tipoDocumento: z.string().trim().optional(),
+        documento: z.string().trim().optional(),
+        telefono: z.string().trim().min(7, "El teléfono debe tener al menos 7 dígitos.").max(15).optional(),
+        correo: z.string().trim().regex(EMAIL_REGEX, "Debe ingresar un correo válido.").optional(),
+        fechaNacimiento: z.string().trim().optional(),
+        edad: z.number().nullable().optional(),
+
+        estado: z.boolean().optional()
+    })
+    .superRefine((data, ctx) => {
+        if (data.tipoDocumento !== undefined) {
+            const tipoNorm = normalizeTipoDocumento(data.tipoDocumento);
+            if (tipoNorm === "TI") {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: ["tipoDocumento"],
+                    message: "La Tarjeta de Identidad (TI) es solo para menores de edad. Los clientes deben ser mayores de edad (mínimo 18 años)."
+                });
+            }
+            if (data.documento !== undefined && ALLOWED_DOCUMENT_TYPES.includes(tipoNorm)) {
+                const docErr = validateDocumentoPorTipo(data.documento, tipoNorm);
+                if (docErr) {
+                    ctx.addIssue({
+                        code: z.ZodIssueCode.custom,
+                        path: ["documento"],
+                        message: docErr
+                    });
+                }
+            }
+        }
+        if (data.fechaNacimiento) {
+            const edadErr = validateMayorDeEdad(data.fechaNacimiento);
+            if (edadErr) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: ["fechaNacimiento"],
+                    message: edadErr
+                });
+            }
+        }
+    })
+    .transform((data) => {
+        let tipoDocumento = data.tipoDocumento ? normalizeTipoDocumento(data.tipoDocumento) : undefined;
+        let documento = data.documento && tipoDocumento ? normalizeDocumento(data.documento, tipoDocumento) : data.documento;
+        let edad = data.edad ?? (data.fechaNacimiento ? calcularEdadNumero(data.fechaNacimiento) : undefined);
+        return {
+            ...data,
+            ...(tipoDocumento ? { tipoDocumento } : {}),
+            ...(documento ? { documento } : {}),
+            ...(edad !== undefined ? { edad } : {}),
+            ...(data.correo ? { correo: data.correo.trim().toLowerCase() } : {})
+        };
+    });
 
 export {
     crearClienteSchema,

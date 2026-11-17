@@ -49,6 +49,9 @@ class ClienteService {
             correo: datos.correo,
             password: datos.password,
             telefono: datos.telefono,
+            foto: datos.foto || null,
+            fechaNacimiento: datos.fechaNacimiento || null,
+            edad: datos.edad || null,
             rol: rolClienteId
         });
 
@@ -56,7 +59,10 @@ class ClienteService {
             // Crear registro de Cliente con referencia al usuario creado
             const cliente = await ClienteRepository.crear({
                 usuario: usuario._id,
-                direccion: datos.direccion
+                direccion: datos.direccion,
+                foto: datos.foto || null,
+                fechaNacimiento: datos.fechaNacimiento || null,
+                edad: datos.edad || null
             });
 
             // Enviar correo al cliente con sus credenciales de acceso
@@ -186,6 +192,29 @@ class ClienteService {
 
         if (datos.direccion) {
             datos.direccion = datos.direccion.trim();
+        }
+
+        // Sincronizar foto y datos con el Usuario vinculado si existen
+        if (cliente.usuario) {
+            const usuarioId = cliente.usuario._id || cliente.usuario;
+            const usuarioUpdates = {};
+            if (datos.foto !== undefined) usuarioUpdates.foto = datos.foto;
+            if (datos.nombre) usuarioUpdates.nombre = datos.nombre;
+            if (datos.apellido) usuarioUpdates.apellido = datos.apellido;
+            if (datos.telefono) usuarioUpdates.telefono = datos.telefono;
+            if (datos.correo) usuarioUpdates.correo = datos.correo;
+            if (datos.tipoDocumento) usuarioUpdates.tipoDocumento = datos.tipoDocumento;
+            if (datos.documento) usuarioUpdates.documento = datos.documento;
+            if (datos.fechaNacimiento) usuarioUpdates.fechaNacimiento = datos.fechaNacimiento;
+            if (datos.edad !== undefined) usuarioUpdates.edad = datos.edad;
+
+            if (Object.keys(usuarioUpdates).length > 0) {
+                try {
+                    await UsuarioHelper.actualizar(usuarioId, usuarioUpdates);
+                } catch (uErr) {
+                    console.warn("[ClienteService] Advertencia sincronizando usuario vinculado:", uErr.message);
+                }
+            }
         }
 
         return await ClienteRepository.actualizar(

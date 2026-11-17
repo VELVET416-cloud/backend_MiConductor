@@ -3,7 +3,9 @@ import {
     ALLOWED_DOCUMENT_TYPES,
     normalizeTipoDocumento,
     normalizeDocumento,
-    validateDocumentoPorTipo
+    validateDocumentoPorTipo,
+    validateMayorDeEdad,
+    calcularEdadNumero
 } from "../cliente/cliente.schema.js";
 
 const crearUsuarioSchema = z
@@ -61,6 +63,11 @@ const crearUsuarioSchema = z
                 error: "El rol es obligatorio."
             })
             .min(1, "El rol es obligatorio."),
+
+        fechaNacimiento: z.string().trim().optional(),
+        edad: z.number().nullable().optional(),
+
+        foto: z.string().nullable().optional(),
 
         estado: z.boolean().optional(),
     })
@@ -178,6 +185,11 @@ const actualizarUsuarioSchema = z
             .min(1)
             .optional(),
 
+        fechaNacimiento: z.string().trim().optional(),
+        edad: z.number().nullable().optional(),
+
+        foto: z.string().nullable().optional(),
+
         estado: z
             .boolean()
             .optional(),
@@ -196,6 +208,23 @@ const actualizarUsuarioSchema = z
                 }
             }
         }
+        if (data.fechaNacimiento) {
+            const edadErr = validateMayorDeEdad(data.fechaNacimiento);
+            if (edadErr) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: ["fechaNacimiento"],
+                    message: edadErr
+                });
+            }
+        }
+    })
+    .transform((data) => {
+        const edad = data.edad ?? (data.fechaNacimiento ? calcularEdadNumero(data.fechaNacimiento) : undefined);
+        return {
+            ...data,
+            ...(edad !== undefined ? { edad } : {})
+        };
     });
 
 export {
