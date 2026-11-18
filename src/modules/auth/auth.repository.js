@@ -11,10 +11,11 @@ class AuthRepository {
             .select("+password")
             .populate({
                 path: "rol",
-                select: "nombre permisos",
+                select: "nombre descripcion activo esSistema permisos",
                 populate: {
                     path: "permisos",
-                    select: "codigo"
+                    select: "nombre codigo modulo activo",
+                    match: { activo: true }
                 }
             });
 
@@ -27,10 +28,11 @@ class AuthRepository {
             estado: true
         }).populate({
             path: "rol",
-            select: "nombre permisos",
+            select: "nombre descripcion activo esSistema permisos",
             populate: {
                 path: "permisos",
-                select: "codigo"
+                select: "nombre codigo modulo activo",
+                match: { activo: true }
             }
         });
 
@@ -45,10 +47,11 @@ class AuthRepository {
             .select("+password")
             .populate({
                 path: "rol",
-                select: "nombre permisos",
+                select: "nombre descripcion activo esSistema permisos",
                 populate: {
                     path: "permisos",
-                    select: "codigo"
+                    select: "nombre codigo modulo activo",
+                    match: { activo: true }
                 }
             });
 

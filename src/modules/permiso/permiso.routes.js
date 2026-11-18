@@ -18,7 +18,7 @@ const router = Router();
 router.get(
     "/",
     authMiddleware,
-    permisoMiddleware("ver.permisos"),
+    permisoMiddleware("ver.permisos", "ver.roles", "crear.roles", "editar.roles"),
     permisoController.obtenerTodos
 );
 

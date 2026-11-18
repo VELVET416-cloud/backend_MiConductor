@@ -27,7 +27,7 @@ router.post(
 router.get(
     "/",
     authMiddleware,
-    permisoMiddleware("ver.vehiculos"),
+    permisoMiddleware("ver.vehiculos", "crear.vehiculos", "editar.vehiculos", "crear.solicitudes"),
     VehiculoController.obtenerTodos
 );
 
@@ -47,7 +47,7 @@ router.get(
 router.get(
     "/:id",
     authMiddleware,
-    permisoMiddleware("ver.vehiculos"),
+    permisoMiddleware("ver.vehiculos", "editar.vehiculos", "ver.solicitudes"),
     VehiculoController.obtenerPorId
 );
 
