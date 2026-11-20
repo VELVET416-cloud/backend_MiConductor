@@ -17,6 +17,21 @@ const clienteSchema = new mongoose.Schema(
             trim: true
         },
 
+        foto: {
+            type: String,
+            default: null,
+            trim: true
+        },
+
+        fechaNacimiento: {
+            type: Date,
+            default: null,
+        },
+
+        edad: {
+            type: Number,
+            default: null,
+        },
         
         estado: {
             type: Boolean,

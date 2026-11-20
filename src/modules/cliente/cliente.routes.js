@@ -13,6 +13,20 @@ import permisoMiddleware from "../../middlewares/permiso.middleware.js";
 
 const router = Router();
 
+// Permite que un usuario con rol CLIENTE consulte o actualice su propio perfil/foto desde la app móvil,
+// o que usuarios administrativos con los permisos indicados accedan a la ruta.
+const permitirClienteOPermiso = (...permisos) => {
+    const checkPermiso = permisoMiddleware(...permisos);
+    return (req, res, next) => {
+        const rolRaw = req.user?.rol?.nombre || req.user?.rol || "";
+        const rolNombre = rolRaw.toString().toUpperCase();
+        if (rolNombre === "CLIENTE" || rolNombre === "CLIENTES") {
+            return next();
+        }
+        return checkPermiso(req, res, next);
+    };
+};
+
 // Crear cliente
 router.post(
     "/",
@@ -26,7 +40,7 @@ router.post(
 router.get(
     "/",
     authMiddleware,
-    permisoMiddleware("ver.clientes", "crear.clientes", "editar.clientes", "crear.vehiculos", "editar.vehiculos", "crear.solicitudes"),
+    permitirClienteOPermiso("ver.clientes", "crear.clientes", "editar.clientes", "crear.vehiculos", "editar.vehiculos", "crear.solicitudes"),
     ClienteController.obtenerTodos
 );
 
@@ -34,8 +48,19 @@ router.get(
 router.get(
     "/lista",
     authMiddleware,
-    permisoMiddleware("ver.clientes", "crear.clientes", "editar.clientes", "crear.vehiculos", "editar.vehiculos", "crear.solicitudes"),
+    permitirClienteOPermiso("ver.clientes", "crear.clientes", "editar.clientes", "crear.vehiculos", "editar.vehiculos", "crear.solicitudes"),
     ClienteController.obtenerLista
+);
+
+// Página pública de activación de cuenta y creación de contraseña para clientes
+router.get(
+    "/activar-cuenta",
+    ClienteController.activarCuentaPage.bind(ClienteController)
+);
+
+router.post(
+    "/activar-cuenta",
+    ClienteController.activarCuentaSubmit.bind(ClienteController)
 );
 
 // Verificar existencia de documento / cédula
@@ -44,19 +69,36 @@ router.get(
     ClienteController.verificarDocumento
 );
 
+// Obtener cliente por ID de Usuario (usado desde app móvil)
+router.get(
+    "/usuario/:usuarioId",
+    authMiddleware,
+    permitirClienteOPermiso("ver.clientes", "editar.clientes"),
+    ClienteController.obtenerPorUsuario
+);
+
 // Obtener cliente por ID
 router.get(
     "/:id",
     authMiddleware,
-    permisoMiddleware("ver.clientes", "editar.clientes", "ver.vehiculos", "ver.solicitudes"),
+    permitirClienteOPermiso("ver.clientes", "editar.clientes", "ver.vehiculos", "ver.solicitudes"),
     ClienteController.obtenerPorId
 );
 
-// Actualizar cliente
+// Actualizar cliente (incluye foto de perfil desde móvil)
 router.put(
     "/:id",
     authMiddleware,
-    permisoMiddleware("editar.clientes"),
+    permitirClienteOPermiso("editar.clientes"),
+    validateSchema(actualizarClienteSchema),
+    ClienteController.actualizar
+);
+
+// Actualizar foto de perfil del cliente
+router.patch(
+    "/:id/foto",
+    authMiddleware,
+    permitirClienteOPermiso("editar.clientes"),
     validateSchema(actualizarClienteSchema),
     ClienteController.actualizar
 );

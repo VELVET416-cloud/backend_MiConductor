@@ -88,8 +88,14 @@ class ClienteRepository {
 
     async obtenerPorUsuario(usuarioId) {
         return await Cliente.findOne({
-            usuario: usuarioId,
-            estado: true
+            usuario: usuarioId
+        }).populate({
+            path: "usuario",
+            select: "-password",
+            populate: {
+                path: "rol",
+                select: "nombre descripcion"
+            }
         });
     }
 
