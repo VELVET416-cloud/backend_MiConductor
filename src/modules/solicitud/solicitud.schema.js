@@ -45,6 +45,34 @@ const prioridadSchema = z
         "La prioridad enviada no es válida."
     );
 
+const FAKE_ADDRESS_REGEX =
+    /calle\s+falsa|carrera\s+falsa|123\s*#\s*123|0+\s*#\s*0+|asdf|qwerty|sin\s+direcci[oó]n|ninguna|casa\s+de\s+mi\s+mam[aá]|casa\s+m[ií]a|prueba\s*123|test\s*123|direccion\s+falsa/i;
+
+const COLOMBIA_ROAD_PREFIX =
+    "(?:calle|cll\\.?|cl\\.?|carrera|cra\\.?|cr\\.?|kr\\.?|k\\.?|circular|cir\\.?|cq\\.?|diagonal|diag\\.?|dg\\.?|transversal|transv\\.?|tv\\.?|tr\\.?|avenida|avda\\.?|av\\.?|autopista|auto\\.?|loma|pasaje|kil[oó]metro|km\\.?|v[ií]a|variante|camino|vereda|vda\\.?)";
+
+const COLOMBIA_ADDRESS_REGEX = new RegExp(
+    `\\b${COLOMBIA_ROAD_PREFIX}\\s*(?:\\d{1,3}[a-zA-Z]?(?:\\s*(?:bis|sur|norte|este|oeste|oriente|occidente|[a-zA-Z]))?|[a-zA-ZáéíóúÁÉÍÓÚñÑ]{3,}(?:\\s+[a-zA-ZáéíóúÁÉÍÓÚñÑ]{2,})?)(?:\\s*(?:#|no\\.?|nro\\.?|n[°º]|-|\\s)\\s*\\d{1,3}[a-zA-Z]?(?:\\s*(?:bis|sur|norte|este|oeste|oriente|occidente|[a-zA-Z]))?\\s*(?:-|a|\\s)\\s*\\d{1,4}|\\s*\\d{1,3})`,
+    "i"
+);
+
+const crearDireccionSchema = (nombreCampo) =>
+    z
+        .string({
+            required_error: `El ${nombreCampo} es obligatorio.`
+        })
+        .trim()
+        .min(8, `Ingresa una dirección de ${nombreCampo} completa (mínimo 8 caracteres).`)
+        .max(200, `El ${nombreCampo} no puede superar los 200 caracteres.`)
+        .refine(
+            val => !FAKE_ADDRESS_REGEX.test(val),
+            `Ingresa una dirección de ${nombreCampo} real y verificable.`
+        )
+        .refine(
+            val => COLOMBIA_ADDRESS_REGEX.test(val),
+            `Usa nomenclatura vial colombiana válida en el ${nombreCampo} (ej: Calle 10 # 43A-30 o Cra 70 # 44B-12).`
+        );
+
 const solicitudBaseSchema = z.object({
     codigo: z
         .string()
@@ -84,21 +112,9 @@ const solicitudBaseSchema = z.object({
         .min(10, "La descripción debe tener al menos 10 caracteres.")
         .max(500, "La descripción no puede superar los 500 caracteres."),
 
-    origen: z
-        .string({
-            required_error: "El origen es obligatorio."
-        })
-        .trim()
-        .min(3, "El origen debe tener al menos 3 caracteres.")
-        .max(200, "El origen no puede superar los 200 caracteres."),
+    origen: crearDireccionSchema("origen"),
 
-    destino: z
-        .string({
-            required_error: "El destino es obligatorio."
-        })
-        .trim()
-        .min(3, "El destino debe tener al menos 3 caracteres.")
-        .max(200, "El destino no puede superar los 200 caracteres."),
+    destino: crearDireccionSchema("destino"),
 
     fechaProgramada: z.coerce.date().optional(),
 
