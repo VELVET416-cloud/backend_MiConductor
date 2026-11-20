@@ -1,0 +1,8 @@
+node_modules
+npm-debug.log
+pnpm-debug.log
+.git
+.gitignore
+README.md
+.env
+firebase-service-account.json
