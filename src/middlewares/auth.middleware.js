@@ -41,6 +41,22 @@ const authMiddleware = async (req, res, next) => {
 
         }
 
+        if (!usuario.rol || usuario.rol.activo === false) {
+
+            throw new AppError(
+                "El rol asignado al usuario no está disponible o se encuentra inactivo.",
+                403
+            );
+
+        }
+
+        const listaPermisos = Array.isArray(usuario.rol.permisos)
+            ? usuario.rol.permisos
+                .filter(permiso => permiso && permiso.activo !== false)
+                .map(permiso => permiso.codigo)
+                .filter(Boolean)
+            : [];
+
         // Guardar la información del usuario para usarla en los demás middlewares
         req.user = {
 
@@ -54,9 +70,9 @@ const authMiddleware = async (req, res, next) => {
 
             rol: usuario.rol.nombre,
 
-            permisos: usuario.rol.permisos.map(
-                permiso => permiso.codigo
-            )
+            rolId: usuario.rol._id,
+
+            permisos: listaPermisos
 
         };
 

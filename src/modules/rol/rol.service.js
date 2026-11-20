@@ -26,25 +26,40 @@ class RolService {
 
         // Validar permisos
         if (Array.isArray(datos.permisos)) {
+            const idsUnicos = [...new Set(datos.permisos.map(id => String(id).trim()).filter(Boolean))];
 
-            const permisos = await Permiso.find({
-                _id: {
-                    $in: datos.permisos
-                },
-                activo: true
-            });
+            if (idsUnicos.length > 0) {
+                const tieneInvalido = idsUnicos.some(id => !mongoose.Types.ObjectId.isValid(id));
+                if (tieneInvalido) {
+                    throw new AppError(
+                        "Uno o más identificadores de permisos son inválidos.",
+                        400
+                    );
+                }
 
-            if (permisos.length !== datos.permisos.length) {
-                throw new AppError(
-                    "Uno o más permisos no existen.",
-                    400
+                const permisos = await Permiso.find({
+                    _id: {
+                        $in: idsUnicos
+                    },
+                    activo: true
+                });
+
+                if (permisos.length !== idsUnicos.length) {
+                    throw new AppError(
+                        "Uno o más permisos no existen.",
+                        400
+                    );
+                }
+
+                datos.permisos = permisos.map(
+                    permiso => permiso._id
                 );
+            } else {
+                datos.permisos = [];
             }
 
-            datos.permisos = permisos.map(
-                permiso => permiso._id
-            );
-
+        } else {
+            datos.permisos = [];
         }
 
         return await rolRepository.crear(datos);
@@ -181,26 +196,39 @@ class RolService {
 
         // Validar permisos
         if (Array.isArray(datos.permisos)) {
+            const idsUnicos = [...new Set(datos.permisos.map(id => String(id).trim()).filter(Boolean))];
 
-            const permisos = await Permiso.find({
-                _id: {
-                    $in: datos.permisos
-                },
-                activo: true
-            });
+            if (idsUnicos.length > 0) {
+                const tieneInvalido = idsUnicos.some(id => !mongoose.Types.ObjectId.isValid(id));
+                if (tieneInvalido) {
+                    throw new AppError(
+                        "Uno o más identificadores de permisos son inválidos.",
+                        400
+                    );
+                }
 
-            if (permisos.length !== datos.permisos.length) {
+                const permisos = await Permiso.find({
+                    _id: {
+                        $in: idsUnicos
+                    },
+                    activo: true
+                });
 
-                throw new AppError(
-                    "Uno o más permisos no existen.",
-                    400
+                if (permisos.length !== idsUnicos.length) {
+
+                    throw new AppError(
+                        "Uno o más permisos no existen.",
+                        400
+                    );
+
+                }
+
+                datos.permisos = permisos.map(
+                    permiso => permiso._id
                 );
-
+            } else {
+                datos.permisos = [];
             }
-
-            datos.permisos = permisos.map(
-                permiso => permiso._id
-            );
 
         }
 

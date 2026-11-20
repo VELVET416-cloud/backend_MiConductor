@@ -7,17 +7,24 @@ class RolRepository {
 
     async crear(datos) {
 
-        return await Rol.create(datos);
+        const rolCreado = await Rol.create(datos);
+        return await Rol.findById(rolCreado._id)
+            .populate({
+                path: "permisos",
+                select: "nombre codigo modulo descripcion activo",
+                match: { activo: true }
+            });
 
     }
 
     async obtenerTodos() {
 
         const roles = await Rol.find({})
-            .populate(
-                "permisos",
-                "nombre codigo modulo descripcion activo"
-            )
+            .populate({
+                path: "permisos",
+                select: "nombre codigo modulo descripcion activo",
+                match: { activo: true }
+            })
             .sort({
                 nombre: 1
             })
@@ -50,10 +57,11 @@ class RolRepository {
         const rol = await Rol.findOne({
             _id: id
         })
-            .populate(
-                "permisos",
-                "nombre codigo modulo descripcion activo"
-            )
+            .populate({
+                path: "permisos",
+                select: "nombre codigo modulo descripcion activo",
+                match: { activo: true }
+            })
             .lean();
 
         if (!rol) {
@@ -95,10 +103,11 @@ class RolRepository {
                 runValidators: true
             }
         )
-            .populate(
-                "permisos",
-                "nombre codigo modulo descripcion activo"
-            );
+            .populate({
+                path: "permisos",
+                select: "nombre codigo modulo descripcion activo",
+                match: { activo: true }
+            });
 
     }
 
