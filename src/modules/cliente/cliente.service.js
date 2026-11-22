@@ -1,5 +1,7 @@
 import EmailService from "../auth/email.service.js";
 import mongoose from "mongoose";
+import jwt from "jsonwebtoken";
+import bcrypt from "bcrypt";
 import dotenv from "dotenv";
 import { env } from "../../config/env.js";
 
@@ -10,6 +12,10 @@ import AppError from "../../utils/AppError.js";
 import RolRepository from "../rol/rol.repository.js";
 import VehiculoRepository from "../vehiculo/vehiculo.repository.js";
 import SolicitudRepository from "../solicitud/solicitud.repository.js";
+import {
+    validarDatosCliente,
+    validarPasswordActivacionCliente
+} from "./cliente.validation.js";
 
 class ClienteService {
 
@@ -18,7 +24,19 @@ class ClienteService {
     // ======================================================
 
     async crear(datos) {
+        validarDatosCliente(datos, { esActualizacion: false });
         datos.direccion = datos.direccion.trim();
+
+        // Validar que el documento y correo no estén repetidos consultando los datos existentes
+        const docExistente = await UsuarioRepository.obtenerPorDocumento(datos.documento);
+        if (docExistente) {
+            throw new AppError("El número de documento ya se encuentra registrado.", 409);
+        }
+
+        const correoExistente = await UsuarioRepository.obtenerPorCorreo(datos.correo);
+        if (correoExistente) {
+            throw new AppError("El correo electrónico ya se encuentra registrado.", 409);
+        }
 
         // Buscar el rol CLIENTE
         let rolClienteId = datos.rol || datos.rolId;
@@ -74,23 +92,41 @@ class ClienteService {
             // Apuntar el enlace de activación del cliente a /api/clientes/activar-cuenta
             // para que funcione directamente en el navegador aunque el Administrador tenga sesión abierta.
             const port = process.env.PORT || env.PORT || 3000;
-            env.MOBILE_CLIENT_URL = `http://localhost:${port}/api/clientes`;
+            const baseUrlActivacion = `http://localhost:${port}/api/clientes`;
 
-            // Enviar correo de activación al cliente para que cree y guarde su contraseña
+            // Generar un token JWT firmado con expiración estricta de 10 minutos (claim "exp")
+            // y de un solo uso vinculado a activationToken y activationTokenExpires (10 minutos) en base de datos
+            const diezMinutosMs = 10 * 60 * 1000;
+            const expiracion10Min = new Date(Date.now() + diezMinutosMs);
+            const secret = process.env.JWT_SECRET || env.JWT_SECRET || "mi_conductor_secret";
+
+            const signedActivationToken = jwt.sign(
+                {
+                    uid: usuario._id.toString(),
+                    purpose: "client_activation"
+                },
+                secret,
+                { expiresIn: "10m" }
+            );
+
+            await ClienteRepository.configurarTokenActivacionCliente(
+                usuario._id,
+                signedActivationToken,
+                expiracion10Min
+            );
+
+            // Enviar correo de activación al cliente indicando que el enlace vence en 10 minutos
             try {
                 const nombreParaCorreo =
                     `${usuario.nombre || ""} ${usuario.apellido || ""}`.trim() ||
                     datos.nombreCompleto ||
                     "Cliente";
 
-                if (usuario.activationToken) {
-                    await EmailService.enviarCorreoActivacion(
-                        usuario.correo,
-                        nombreParaCorreo,
-                        usuario.activationToken,
-                        "mobile"
-                    );
-                }
+                await this.enviarCorreoActivacionCliente10Min(
+                    usuario.correo,
+                    nombreParaCorreo,
+                    `${baseUrlActivacion}/activar-cuenta?token=${encodeURIComponent(signedActivationToken)}`
+                );
             } catch (mailErr) {
                 console.error("[ClienteService] Error enviando correo de activación:", mailErr.message);
             }
@@ -137,24 +173,19 @@ class ClienteService {
             );
         }
 
-        let cliente = await ClienteRepository.obtenerPorUsuario(usuarioId);
-
-        if (!cliente) {
-            const usuarioExiste = await UsuarioRepository.obtenerPorId(usuarioId);
-            if (usuarioExiste) {
-                const creado = await ClienteRepository.crear({
-                    usuario: usuarioExiste._id,
-                    direccion: "Sin dirección registrada",
-                    foto: usuarioExiste.foto || null
-                });
-                cliente = await ClienteRepository.obtenerPorId(creado._id);
-            }
-        }
+        const cliente = await ClienteRepository.obtenerPorUsuario(usuarioId);
 
         if (!cliente) {
             throw new AppError(
-                "Cliente no encontrado para este usuario.",
-                404
+                "La cuenta del cliente ya no existe o fue eliminada.",
+                401
+            );
+        }
+
+        if (cliente.estado === false || (cliente.usuario && cliente.usuario.estado === false)) {
+            throw new AppError(
+                "Tu cuenta de cliente se encuentra desactivada.",
+                401
             );
         }
 
@@ -226,21 +257,54 @@ class ClienteService {
             );
         }
 
+        // Prohibir modificación de tipoDocumento y documento en la actualización del cliente
+        const existingTipoDoc = (cliente.usuario?.tipoDocumento || "").toString().trim().toUpperCase();
+        const existingDoc = (cliente.usuario?.documento || "").toString().trim();
+
+        if (
+            datos.tipoDocumento !== undefined &&
+            existingTipoDoc &&
+            datos.tipoDocumento.toString().trim().toUpperCase() !== existingTipoDoc
+        ) {
+            throw new AppError("El tipo de documento del cliente no puede ser modificado.", 400);
+        }
+
+        if (
+            datos.documento !== undefined &&
+            existingDoc &&
+            datos.documento.toString().trim() !== existingDoc
+        ) {
+            throw new AppError("El número de documento del cliente no puede ser modificado.", 400);
+        }
+
+        delete datos.tipoDocumento;
+        delete datos.documento;
+
+        validarDatosCliente(datos, { esActualizacion: true });
+
+        const currentUsuarioId = (cliente.usuario?._id || cliente.usuario || "").toString();
+
+        if (datos.correo) {
+            const correoExistente = await UsuarioRepository.obtenerPorCorreo(datos.correo);
+            if (correoExistente && correoExistente._id.toString() !== currentUsuarioId) {
+                throw new AppError("El correo electrónico ya se encuentra registrado en otro usuario.", 409);
+            }
+        }
+
         if (datos.direccion) {
             datos.direccion = datos.direccion.trim();
         }
 
-        // Sincronizar foto y datos con el Usuario vinculado si existen
+        // Sincronizar foto, estado y datos con el Usuario vinculado si existen (sin modificar tipoDocumento ni documento)
         if (cliente.usuario) {
             const usuarioId = cliente.usuario._id || cliente.usuario;
             const usuarioUpdates = {};
+            if (datos.estado !== undefined) usuarioUpdates.estado = Boolean(datos.estado);
             if (datos.foto !== undefined) usuarioUpdates.foto = datos.foto;
             if (datos.nombre) usuarioUpdates.nombre = datos.nombre;
             if (datos.apellido) usuarioUpdates.apellido = datos.apellido;
             if (datos.telefono) usuarioUpdates.telefono = datos.telefono;
             if (datos.correo) usuarioUpdates.correo = datos.correo;
-            if (datos.tipoDocumento) usuarioUpdates.tipoDocumento = datos.tipoDocumento;
-            if (datos.documento) usuarioUpdates.documento = datos.documento;
             if (datos.fechaNacimiento) usuarioUpdates.fechaNacimiento = datos.fechaNacimiento;
             if (datos.edad !== undefined) usuarioUpdates.edad = datos.edad;
 
@@ -280,36 +344,44 @@ class ClienteService {
             );
         }
 
-        const vehiculos = await VehiculoRepository.obtenerPorCliente(id);
-        const solicitudes = await SolicitudRepository.obtenerPorCliente(id);
+        const usuarioId = cliente.usuario?._id || cliente.usuario;
+        const correoCliente = (cliente.usuario?.correo || "").toString().trim().toLowerCase();
 
-        if ((vehiculos && vehiculos.length > 0) || (solicitudes && solicitudes.length > 0)) {
-            // Desactivar en lugar de eliminar
+        const vehiculos = await VehiculoRepository.obtenerPorCliente(id);
+        const solicitudesPorId = await SolicitudRepository.obtenerPorCliente(id);
+        const solicitudesPorCorreo = correoCliente
+            ? await SolicitudRepository.obtenerTodos({ correoCliente })
+            : [];
+
+        const tieneVehiculos = Array.isArray(vehiculos) && vehiculos.length > 0;
+        const tieneServicios =
+            (Array.isArray(solicitudesPorId) && solicitudesPorId.length > 0) ||
+            (Array.isArray(solicitudesPorCorreo) && solicitudesPorCorreo.length > 0);
+
+        if (tieneVehiculos || tieneServicios) {
+            // Desactivar cliente y su usuario vinculado para revocar acceso móvil inmediatamente
             await ClienteRepository.eliminar(id);
-            if (cliente.usuario && cliente.usuario._id) {
-                await UsuarioHelper.eliminar(cliente.usuario._id);
+            if (usuarioId) {
+                await UsuarioHelper.eliminar(usuarioId);
             }
-            
+
             let msg = "El cliente tiene ";
-            if (vehiculos && vehiculos.length > 0) msg += "vehículos asociados";
-            if (solicitudes && solicitudes.length > 0) {
-                if (vehiculos && vehiculos.length > 0) msg += " y ";
+            if (tieneVehiculos) msg += "vehículos asociados";
+            if (tieneServicios) {
+                if (tieneVehiculos) msg += " y ";
                 msg += "solicitudes de servicio registradas";
             }
             throw new AppError(msg + ". Por lo tanto, ha sido desactivado en lugar de eliminado.", 400);
         }
 
-        // Eliminación física
+        // Eliminación física (cliente sin servicios ni vehículos asociados)
         await ClienteRepository.eliminarFisico(id);
 
-        if (cliente.usuario && cliente.usuario._id) {
-            await UsuarioHelper.eliminarFisico(
-                cliente.usuario._id
-            );
+        if (usuarioId) {
+            await UsuarioHelper.eliminarFisico(usuarioId);
         }
 
         return;
-
     }
 
     // ======================================================
@@ -342,6 +414,145 @@ class ClienteService {
             disponible: true,
             existe: false,
             mensaje: "El documento está disponible para registro."
+        };
+    }
+
+    // ======================================================
+    // ACTIVACIÓN DE CUENTA DE CLIENTE (10 MINUTOS, UN SOLO USO)
+    // ======================================================
+
+    async enviarCorreoActivacionCliente10Min(correo, nombre, enlaceActivacion) {
+        const transporter = await EmailService.getTransporter();
+
+        if (!transporter) {
+            console.log(`==================================================`);
+            console.log(`📧 [ACTIVACIÓN DE CUENTA CLIENTE (10 MIN) - MODO LOCAL]`);
+            console.log(`👤 Cliente: ${nombre}`);
+            console.log(`🔗 Enlace de activación (vence en 10 minutos): ${enlaceActivacion}`);
+            console.log(`==================================================`);
+            return;
+        }
+
+        const fromAddress = env.MAIL_USER || "seguridad@miconductor.com";
+        await transporter.sendMail({
+            from: `"Mi Conductor" <${fromAddress}>`,
+            to: correo,
+            subject: "Activa tu cuenta en Mi Conductor y establece tu contraseña",
+            html: `
+                <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: auto; padding: 32px; border: 1px solid #e2e8f0; border-radius: 16px; background: #ffffff;">
+                    <div style="margin-bottom: 24px;">
+                        <span style="font-size: 12px; font-weight: 700; color: #FB9833; text-transform: uppercase; letter-spacing: 0.1em;">
+                            MI CONDUCTOR
+                        </span>
+                        <h2 style="color: #11384a; margin: 6px 0 0; font-size: 22px; font-weight: 700;">
+                            ¡Bienvenido a Mi Conductor!
+                        </h2>
+                    </div>
+
+                    <p style="color: #334155; font-size: 15px; line-height: 1.5; margin: 0 0 16px 0;">
+                        Hola <strong>${nombre}</strong>,
+                    </p>
+
+                    <p style="color: #334155; font-size: 14px; line-height: 1.5; margin: 0 0 20px 0;">
+                        Tu cuenta de cliente ha sido creada exitosamente en la plataforma <strong>Mi Conductor</strong>. Por motivos de seguridad, para activar tu acceso debes establecer tu propia contraseña en el siguiente enlace:
+                    </p>
+
+                    <div style="margin: 28px 0; text-align: center;">
+                        <a
+                            href="${enlaceActivacion}"
+                            style="display: inline-block; padding: 14px 32px; background-color: #FB9833; color: #012538; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 15px; box-shadow: 0 4px 12px rgba(251, 152, 51, 0.35);"
+                        >
+                            Activar mi cuenta y crear contraseña
+                        </a>
+                    </div>
+
+                    <div style="background: #f8fafc; border-left: 4px solid #3b82f6; padding: 14px 18px; border-radius: 8px; margin: 24px 0;">
+                        <p style="margin: 0; font-size: 13px; color: #475569; line-height: 1.4;">
+                            <strong>Importante:</strong> Este enlace de activación es seguro, de un solo uso y <strong>vence en 10 minutos</strong>.
+                        </p>
+                    </div>
+
+                    <p style="color: #64748b; font-size: 12.5px; line-height: 1.5; margin: 0 0 24px 0;">
+                        Si el botón no funciona, copia y pega el siguiente enlace en tu navegador:<br />
+                        <a href="${enlaceActivacion}" style="color: #ea580c; word-break: break-all;">${enlaceActivacion}</a>
+                    </p>
+
+                    <hr style="border: none; border-top: 1px solid #f1f5f9; margin: 28px 0;" />
+
+                    <p style="color: #94a3b8; font-size: 12px; margin: 0;">
+                        Equipo Mi Conductor — Seguridad y Confianza
+                    </p>
+                </div>
+            `
+        });
+    }
+
+    async verificarTokenActivacionCliente(token) {
+        const cleanToken = (token || "").toString().trim();
+        if (!cleanToken) {
+            throw new AppError("El enlace ha expirado o no es válido", 410);
+        }
+
+        // Si el token es un JWT firmado, verificar su firma y claim "exp" (10 minutos)
+        if (cleanToken.split(".").length === 3) {
+            const secret = process.env.JWT_SECRET || env.JWT_SECRET || "mi_conductor_secret";
+            try {
+                const payload = jwt.verify(cleanToken, secret);
+                if (!payload || payload.purpose !== "client_activation") {
+                    throw new AppError("El enlace ha expirado o no es válido", 410);
+                }
+            } catch {
+                throw new AppError("El enlace ha expirado o no es válido", 410);
+            }
+        }
+
+        // Verificar en base de datos que el token exista, no haya sido usado (isActivated === false)
+        // y que activationTokenExpires sea posterior al momento actual
+        const usuario = await ClienteRepository.obtenerUsuarioPorTokenActivacionCliente(cleanToken);
+        if (!usuario) {
+            throw new AppError("El enlace ha expirado o no es válido", 410);
+        }
+
+        return {
+            valid: true,
+            usuarioId: usuario._id,
+            correo: usuario.correo,
+            documento: usuario.documento || "",
+            nombre: usuario.nombre || "",
+            apellido: usuario.apellido || "",
+            nombreCompleto: `${usuario.nombre || ""} ${usuario.apellido || ""}`.trim() || usuario.nombreCompleto || "Cliente",
+            rol: usuario.rol?.nombre || "CLIENTE"
+        };
+    }
+
+    async activarCuentaCliente({ token, password, confirmPassword }) {
+        // 1. Verificar token (10 minutos + un solo uso)
+        const userInfo = await this.verificarTokenActivacionCliente(token);
+
+        // 2. Validar requisitos estrictos de contraseña en el backend
+        const validacion = validarPasswordActivacionCliente(password, confirmPassword, userInfo);
+        if (!validacion.valid) {
+            throw new AppError(validacion.message, 400);
+        }
+
+        // 3. Hashear contraseña con bcrypt (nunca guardar ni registrar en texto plano)
+        const salt = await bcrypt.genSalt(10);
+        const passwordHash = await bcrypt.hash(String(password), salt);
+
+        // 4. Consumir token de forma atómica (un solo uso: limpia activationToken y marca isActivated = true)
+        const actualizado = await ClienteRepository.consumirTokenYActivarCliente(
+            userInfo.usuarioId,
+            String(token).trim(),
+            passwordHash
+        );
+
+        if (!actualizado) {
+            throw new AppError("El enlace ha expirado o no es válido", 410);
+        }
+
+        return {
+            mensaje: "Tu contraseña ha sido creada y tu cuenta ya se encuentra activa.",
+            userInfo
         };
     }
 
