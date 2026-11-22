@@ -4,11 +4,13 @@ import VehiculoRepository from "./vehiculo.repository.js";
 import ClienteRepository from "../cliente/cliente.repository.js";
 import SolicitudRepository from "../solicitud/solicitud.repository.js";
 import AppError from "../../utils/AppError.js";
+import { validarDatosVehiculo } from "./vehiculo.validation.js";
 
 class VehiculoService {
 
     // Crear vehículo
     async crear(datos) {
+        validarDatosVehiculo(datos, { esActualizacion: false });
 
         // Normalizar
         datos.marca = datos.marca.trim();
@@ -207,6 +209,8 @@ class VehiculoService {
                 404
             );
         }
+
+        validarDatosVehiculo(datos, { esActualizacion: true, vehiculoActual: vehiculo });
 
         if (datos.cliente) {
             let cliente = await ClienteRepository.obtenerPorId(datos.cliente);

@@ -31,41 +31,105 @@ class VehiculoRepository {
             filter.estadoVehiculo = { $ne: 'vendido' };
         }
 
-        if (search && search.trim() !== '') {
-            const q = new RegExp(search.trim(), 'i');
-            const searchCondition = {
-                $or: [
-                    { placa: q },
-                    { marca: q },
-                    { modelo: q }
-                ]
+        const normalizeText = (str) =>
+            String(str ?? '')
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .toLowerCase()
+                .trim();
+
+        const searchWords = normalizeText(search).split(/\s+/).filter(Boolean);
+
+        if (searchWords.length === 0) {
+            const [rows, total] = await Promise.all([
+                Vehiculo.find(filter)
+                    .skip(skip)
+                    .limit(limit)
+                    .populate({
+                        path: "cliente",
+                        populate: {
+                            path: "usuario",
+                            select: "-password",
+                            populate: {
+                                path: "rol",
+                                select: "nombre descripcion"
+                            }
+                        }
+                    })
+                    .sort({ createdAt: -1 }),
+                Vehiculo.countDocuments(filter)
+            ]);
+
+            const totalPages = Math.ceil(total / limit);
+
+            return {
+                rows,
+                total,
+                page,
+                totalPages,
+                limit
             };
-            if (filter.$or) {
-                filter = { $and: [filter, searchCondition] };
-            } else {
-                Object.assign(filter, searchCondition);
-            }
         }
 
-        const [rows, total] = await Promise.all([
-            Vehiculo.find(filter)
-                .skip(skip)
-                .limit(limit)
-                .populate({
-                    path: "cliente",
+        // Búsqueda multicriterio sin distinguir mayúsculas ni tildes:
+        // placa, marca, modelo, color, tipo, año, cliente asociado y estado (todos los términos deben coincidir)
+        const allVehiculos = await Vehiculo.find(filter)
+            .populate({
+                path: "cliente",
+                populate: {
+                    path: "usuario",
+                    select: "-password",
                     populate: {
-                        path: "usuario",
-                        select: "-password",
-                        populate: {
-                            path: "rol",
-                            select: "nombre descripcion"
-                        }
+                        path: "rol",
+                        select: "nombre descripcion"
                     }
-                })
-                .sort({ createdAt: -1 }),
-            Vehiculo.countDocuments(filter)
-        ]);
+                }
+            })
+            .sort({ createdAt: -1 });
 
+        const matchingVehiculos = allVehiculos.filter((v) => {
+            const vStatus = (v.estadoVehiculo || (v.estado === false ? 'inactivo' : 'activo')).toLowerCase();
+            const ownerUser = v.cliente?.usuario || {};
+            const ownerName = `${ownerUser.nombre || v.cliente?.nombre || ''} ${ownerUser.apellido || v.cliente?.apellido || ''}`.trim();
+            const ownerDoc = ownerUser.documento || v.cliente?.documento || '';
+            const ownerEmail = ownerUser.correo || v.cliente?.correo || '';
+            const ownerPhone = ownerUser.telefono || v.cliente?.telefono || '';
+
+            const fieldsText = normalizeText([
+                v.placa || '',
+                v.marca || '',
+                v.modelo || '',
+                v.color || '',
+                v.tipoVehiculo || '',
+                v.anio ? String(v.anio) : '',
+                ownerName,
+                ownerDoc,
+                ownerEmail,
+                ownerPhone
+            ].join(' '));
+
+            const estadoTokens =
+                vStatus === 'activo'
+                    ? ['activo', 'activa', 'activos']
+                    : vStatus === 'en_mantenimiento'
+                    ? ['en_mantenimiento', 'mantenimiento']
+                    : vStatus === 'vendido'
+                    ? ['vendido', 'vendidos']
+                    : ['inactivo', 'inactiva', 'inactivos', 'desactivado'];
+
+            return searchWords.every((word) => {
+                if (['activo', 'activa', 'activos'].includes(word)) {
+                    return vStatus === 'activo' || fieldsText.includes(word);
+                }
+                if (['inactivo', 'inactiva', 'inactivos', 'desactivado'].includes(word)) {
+                    return vStatus === 'inactivo' || fieldsText.includes(word);
+                }
+                return fieldsText.includes(word) || estadoTokens.some((t) => t.includes(word));
+            });
+        });
+
+        const total = matchingVehiculos.length;
+        const rows = matchingVehiculos.slice(skip, skip + limit);
         const totalPages = Math.ceil(total / limit);
 
         return {
