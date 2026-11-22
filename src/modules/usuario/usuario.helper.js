@@ -109,26 +109,35 @@ class UsuarioHelper {
             );
         }
 
+        let plainPasswordGenerada = null;
+
         if (!datos.password) {
             const token = crypto.randomBytes(32).toString("hex");
             datos.activationToken = token;
             datos.activationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
             datos.isActivated = false;
 
-            const tempPassword = crypto.randomBytes(24).toString("hex");
+            // Generar una contraseña temporal legible y segura (ej: Mc*8F3a9B2!)
+            const randomPart = crypto.randomBytes(4).toString("hex");
+            plainPasswordGenerada = `Mc*${randomPart}!`;
             const salt = await bcrypt.genSalt(10);
-            datos.password = await bcrypt.hash(tempPassword, salt);
+            datos.password = await bcrypt.hash(plainPasswordGenerada, salt);
         } else {
             const salt = await bcrypt.genSalt(10);
+            plainPasswordGenerada = datos.password;
             datos.password = await bcrypt.hash(datos.password, salt);
             datos.isActivated = true;
         }
 
-
-
-        return await UsuarioRepository.crear(
+        const usuarioCreado = await UsuarioRepository.crear(
             datos
         );
+
+        if (usuarioCreado) {
+            usuarioCreado.plainPassword = plainPasswordGenerada;
+        }
+
+        return usuarioCreado;
     }
 
 

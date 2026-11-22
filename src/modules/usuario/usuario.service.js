@@ -13,10 +13,26 @@ class UsuarioService {
         const usuario = await UsuarioHelper.crear(datos);
         // Enviar correo de activación de cuenta en segundo plano (asíncrono) para evitar bloqueos/timeouts en el cliente
         const nombreActivacion = `${usuario.nombre || ""} ${usuario.apellido || ""}`.trim() || usuario.nombreCompleto || "Usuario";
+        
+        let nombreRol = "ADMINISTRADOR";
+        try {
+            if (usuario.rol) {
+                const RolRepository = (await import("../rol/rol.repository.js")).default;
+                const rolEncontrado = await RolRepository.obtenerPorId(usuario.rol);
+                if (rolEncontrado?.nombre) {
+                    nombreRol = rolEncontrado.nombre;
+                }
+            }
+        } catch {
+            nombreRol = "ADMINISTRADOR";
+        }
+
         EmailService.enviarCorreoActivacion(
             usuario.correo,
             nombreActivacion,
-            usuario.activationToken
+            usuario.activationToken,
+            "web",
+            nombreRol
         ).catch((mailErr) => {
             console.error("[UsuarioService] Error enviando correo de activación:", mailErr.message);
         });
