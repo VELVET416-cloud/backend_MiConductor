@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import crypto from "crypto";
 import { env } from "../../config/env.js";
 
 let etherealAccount = null;
@@ -111,11 +112,73 @@ class EmailService {
         }
     }
 
+    // ======================================================
+    // HELPER PARA EXPLICACIÓN DE ACCESO SEGÚN ROL
+    // ======================================================
+    obtenerExplicacionAcceso(rol = "") {
+        const rolNorm = String(rol || "").toUpperCase().trim();
+        const esAdmin =
+            rolNorm.includes("ADMIN") ||
+            rolNorm.includes("GEST") ||
+            rolNorm.includes("SUPER") ||
+            rolNorm === "OPERADOR";
+        const esConductor = rolNorm.includes("CONDUCTOR") || rolNorm.includes("CHOFER") || rolNorm.includes("DRIVER");
+
+        if (esAdmin) {
+            return {
+                tipo: "admin",
+                titulo: "💻 Continuar en la Plataforma Web Administrativa",
+                icono: "💻",
+                texto: "Como parte del equipo administrativo, tu acceso está habilitado para gestionar y supervisar las operaciones del sistema. <strong>Debes continuar e iniciar sesión en el panel web de Mi Conductor</strong> desde tu navegador en un computador o dispositivo de escritorio para gestionar clientes, conductores, vehículos y solicitudes.",
+                botonTexto: "Ir al Panel Administrativo Web",
+                colorFondo: "#f8fafc",
+                colorBorde: "#cbd5e1",
+                colorTitulo: "#0f172a",
+                colorTexto: "#334155"
+            };
+        }
+
+        if (esConductor) {
+            return {
+                tipo: "conductor",
+                titulo: "🚗 Continuar en la Aplicación Móvil (Conductor)",
+                icono: "🚗",
+                texto: "Como conductor de <strong>Mi Conductor</strong>, todas tus operaciones se realizan exclusivamente desde tu celular. <strong>Debes continuar e iniciar sesión en la aplicación móvil Mi Conductor</strong> para recibir solicitudes de traslados, iniciar recorridos, registrar novedades y consultar tu estado de servicios. La web administrativa es de uso interno del sistema.",
+                botonTexto: "Abrir App Mi Conductor",
+                colorFondo: "#fffbeb",
+                colorBorde: "#fde68a",
+                colorTitulo: "#92400e",
+                colorTexto: "#78350f"
+            };
+        }
+
+        // Caso por defecto: Cliente
+        return {
+            tipo: "cliente",
+            titulo: "📱 Continuar en la Aplicación Móvil (Cliente)",
+            icono: "📱",
+            texto: "Para disfrutar de todos los servicios de <strong>Mi Conductor</strong> (solicitar traslados de vehículos, registrar tus autos, realizar seguimiento en tiempo real y calificar a tus conductores), <strong>debes continuar e iniciar sesión directamente desde la aplicación móvil Mi Conductor</strong> en tu celular. El portal web está reservado exclusivamente para la administración interna del sistema.",
+            botonTexto: "Abrir App Mi Conductor",
+            colorFondo: "#eff6ff",
+            colorBorde: "#bfdbfe",
+            colorTitulo: "#1e40af",
+            colorTexto: "#1e3a8a"
+        };
+    }
+
     async enviarCredencialesNuevoUsuario(datos) {
-        const { correo, nombre, password, rol = "Usuario" } = datos;
+        let { correo, nombre, password, rol = "Usuario" } = datos;
         const loginUrl = `${env.CLIENT_URL || "http://localhost:5173"}/login`;
 
-        console.log(`[EmailService] Preparando correo de credenciales para: ${correo} (Rol: ${rol})`);
+        // Garantizar que la contraseña nunca sea undefined, nula o el string "undefined"
+        if (!password || password === "undefined" || password === "null") {
+            const randomPart = crypto.randomBytes(4).toString("hex");
+            password = `Mc*${randomPart}!`;
+        }
+
+        const explicacion = this.obtenerExplicacionAcceso(rol);
+
+        console.log(`[EmailService] Preparando correo de credenciales para: ${correo} (Rol: ${rol}, Destino: ${explicacion.tipo})`);
 
         const transporter = await this.getTransporter();
 
@@ -125,7 +188,8 @@ class EmailService {
             console.log(`👤 Usuario: ${nombre} (${rol})`);
             console.log(`📬 Correo: ${correo}`);
             console.log(`🔑 Contraseña: ${password}`);
-            console.log(`🌐 Login: ${loginUrl}`);
+            console.log(`🎯 Mensaje: ${explicacion.titulo}`);
+            console.log(`🌐 Web / Login: ${loginUrl}`);
             console.log(`==================================================`);
             return;
         }
@@ -152,7 +216,7 @@ class EmailService {
                         </p>
 
                         <p style="color: #334155; font-size: 14px; line-height: 1.5; margin: 0 0 20px 0;">
-                            Se ha creado tu cuenta exitosamente en el sistema <strong>Mi Conductor</strong> con el rol de <strong>${rol}</strong>. A continuación encontrarás tus credenciales para iniciar sesión:
+                            Se ha creado tu cuenta exitosamente en el sistema <strong>Mi Conductor</strong> con el rol de <strong>${rol}</strong>. A continuación encontrarás tus credenciales de acceso asignadas:
                         </p>
 
                         <div style="background: #f8fafc; border-left: 4px solid #FB9833; padding: 18px 20px; border-radius: 8px; margin: 20px 0;">
@@ -162,9 +226,22 @@ class EmailService {
                                 <span style="color: #0f172a; font-size: 15px; font-weight: 600;">${correo}</span>
                             </p>
                             <p style="margin: 0; font-size: 14px; color: #475569;">
-                                <strong style="color: #1e293b;">Contraseña temporal:</strong>
+                                <strong style="color: #1e293b;">Contraseña asignada:</strong>
                                 <br />
-                                <span style="display: inline-block; margin-top: 4px; background: #e2e8f0; padding: 4px 10px; border-radius: 6px; font-size: 16px; font-weight: 700; color: #0f172a; font-family: monospace;">${password}</span>
+                                <span style="display: inline-block; margin-top: 4px; background: #fef3c7; border: 1px solid #fde68a; padding: 6px 14px; border-radius: 8px; font-size: 17px; font-weight: 700; color: #92400e; font-family: monospace; letter-spacing: 0.05em;">${password}</span>
+                            </p>
+                        </div>
+
+                        <!-- EXPLICACIÓN SEGÚN ROL -->
+                        <div style="background: ${explicacion.colorFondo}; border: 1.5px solid ${explicacion.colorBorde}; border-radius: 12px; padding: 18px 20px; margin: 24px 0;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                <span style="font-size: 18px;">${explicacion.icono}</span>
+                                <h3 style="color: ${explicacion.colorTitulo}; margin: 0; font-size: 15px; font-weight: 700;">
+                                    ${explicacion.titulo}
+                                </h3>
+                            </div>
+                            <p style="color: ${explicacion.colorTexto}; font-size: 13.5px; line-height: 1.55; margin: 0;">
+                                ${explicacion.texto}
                             </p>
                         </div>
 
@@ -172,14 +249,22 @@ class EmailService {
                             Por tu seguridad, te recomendamos cambiar tu contraseña una vez hayas iniciado sesión por primera vez desde el menú de tu perfil.
                         </p>
 
-                        <div style="margin: 28px 0;">
+                        ${explicacion.tipo === "admin" ? `
+                        <div style="margin: 24px 0; text-align: center;">
                             <a
                                 href="${loginUrl}"
                                 style="display: inline-block; padding: 13px 28px; background-color: #FB9833; color: #012538; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 14.5px; box-shadow: 0 2px 8px rgba(251, 152, 51, 0.3);"
                             >
-                                Iniciar sesión en Mi Conductor
+                                Iniciar sesión en el Panel Web
                             </a>
                         </div>
+                        ` : `
+                        <div style="margin: 20px 0; text-align: center;">
+                            <span style="display: inline-block; padding: 10px 22px; background: #012538; color: #ffffff; border-radius: 10px; font-size: 13px; font-weight: 600;">
+                                📲 Inicia sesión desde la App Móvil en tu celular
+                            </span>
+                        </div>
+                        `}
 
                         <hr style="border: none; border-top: 1px solid #f1f5f9; margin: 28px 0;" />
 
@@ -205,20 +290,22 @@ class EmailService {
         }
     }
 
-    async enviarCorreoActivacion(correo, nombre, token, origen = "web") {
+    async enviarCorreoActivacion(correo, nombre, token, origen = "web", rol = "") {
         const baseUrl = origen === "mobile" ? env.MOBILE_CLIENT_URL : env.CLIENT_URL;
         const enlaceActivacion = `${baseUrl}/activar-cuenta?token=${token}`;
+        const explicacion = this.obtenerExplicacionAcceso(rol || (origen === "web" ? "ADMINISTRADOR" : "CLIENTE"));
 
-        console.log(`[EmailService] Preparando correo de activación para: ${correo}`);
+        console.log(`[EmailService] Preparando correo de activación para: ${correo} (Rol: ${rol || origen})`);
 
         const transporter = await this.getTransporter();
 
         if (!transporter) {
             console.log(`==================================================`);
             console.log(`📧 [ACTIVACIÓN DE CUENTA - MODO LOCAL]`);
-            console.log(`👤 Usuario: ${nombre}`);
+            console.log(`👤 Usuario: ${nombre} (Rol: ${rol || origen})`);
             console.log(`📬 Correo: ${correo}`);
             console.log(`🔗 Enlace de activación: ${enlaceActivacion}`);
+            console.log(`🎯 Destino: ${explicacion.titulo}`);
             console.log(`==================================================`);
             return;
         }
@@ -257,6 +344,19 @@ class EmailService {
                             </a>
                         </div>
 
+                        <!-- EXPLICACIÓN SEGÚN ROL -->
+                        <div style="background: ${explicacion.colorFondo}; border: 1.5px solid ${explicacion.colorBorde}; border-radius: 12px; padding: 18px 20px; margin: 24px 0;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                <span style="font-size: 18px;">${explicacion.icono}</span>
+                                <h3 style="color: ${explicacion.colorTitulo}; margin: 0; font-size: 15px; font-weight: 700;">
+                                    ${explicacion.titulo}
+                                </h3>
+                            </div>
+                            <p style="color: ${explicacion.colorTexto}; font-size: 13.5px; line-height: 1.55; margin: 0;">
+                                ${explicacion.texto}
+                            </p>
+                        </div>
+
                         <div style="background: #f8fafc; border-left: 4px solid #3b82f6; padding: 14px 18px; border-radius: 8px; margin: 24px 0;">
                             <p style="margin: 0; font-size: 13px; color: #475569; line-height: 1.4;">
                                 <strong>Importante:</strong> Este enlace de activación es seguro, de un solo uso y expirará en <strong>24 horas</strong>.
@@ -286,6 +386,6 @@ class EmailService {
             console.error(`[EmailService] Error al enviar correo de activación a ${correo}:`, error.message);
         }
     }
-    }
+}
 
 export default new EmailService();

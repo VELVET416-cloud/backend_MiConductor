@@ -163,7 +163,9 @@ class ConductorService {
                     await EmailService.enviarCorreoActivacion(
                         usuarioFinal.correo,
                         nombreParaCorreo,
-                        usuarioFinal.activationToken
+                        usuarioFinal.activationToken,
+                        "mobile",
+                        "CONDUCTOR"
                     );
                 }
             } catch (mailErr) {

@@ -466,6 +466,19 @@ class ClienteService {
                         </a>
                     </div>
 
+                    <!-- EXPLICACIÓN USO EN APP MÓVIL -->
+                    <div style="background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 12px; padding: 18px 20px; margin: 24px 0;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                            <span style="font-size: 18px;">📱</span>
+                            <h3 style="color: #1e40af; margin: 0; font-size: 15px; font-weight: 700;">
+                                Continuar en la Aplicación Móvil
+                            </h3>
+                        </div>
+                        <p style="color: #1e3a8a; font-size: 13.5px; line-height: 1.55; margin: 0;">
+                            Una vez que actives tu cuenta y crees tu contraseña, <strong>debes continuar e iniciar sesión en la aplicación móvil de Mi Conductor</strong> en tu celular para solicitar traslados de vehículos, registrar tus autos y gestionar tus servicios. La plataforma web está reservada exclusivamente para la administración interna del sistema.
+                        </p>
+                    </div>
+
                     <div style="background: #f8fafc; border-left: 4px solid #3b82f6; padding: 14px 18px; border-radius: 8px; margin: 24px 0;">
                         <p style="margin: 0; font-size: 13px; color: #475569; line-height: 1.4;">
                             <strong>Importante:</strong> Este enlace de activación es seguro, de un solo uso y <strong>vence en 10 minutos</strong>.
