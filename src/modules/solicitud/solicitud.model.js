@@ -110,6 +110,7 @@ const solicitudSchema = new mongoose.Schema(
         prioridad: {
             type: String,
             required: [true, "La prioridad es obligatoria."],
+            default: "MEDIA",
             enum: ["BAJA", "MEDIA", "ALTA", "URGENTE"],
             trim: true,
             uppercase: true

@@ -14,13 +14,27 @@ import permisoMiddleware from "../../middlewares/permiso.middleware.js";
 
 const router = Router();
 
+// Permite a usuarios de la app móvil (CONDUCTOR y CLIENTE) o administradores con permisos
+const permitirMobileOPermiso = (...permisos) => {
+    const checkPermiso = permisoMiddleware(...permisos);
+    return (req, res, next) => {
+        const rolRaw = req.user?.rol?.nombre || req.user?.rol || "";
+        const rolNombre = rolRaw.toString().toUpperCase();
+        if (rolNombre === "CONDUCTOR" || rolNombre === "CONDUCTORES" || rolNombre === "CLIENTE" || rolNombre === "CLIENTES") {
+            return next();
+        }
+        return checkPermiso(req, res, next);
+    };
+};
+
+
 // ======================================================
 // Crear novedad
 // ======================================================
 router.post(
     "/",
     authMiddleware,
-    permisoMiddleware("crear.novedades"),
+    permitirMobileOPermiso("crear.novedades"),
     validateSchema(crearNovedadSchema),
     NovedadController.crear
 );
@@ -31,7 +45,7 @@ router.post(
 router.get(
     "/",
     authMiddleware,
-    permisoMiddleware("ver.novedades", "crear.novedades", "editar.novedades"),
+    permitirMobileOPermiso("ver.novedades", "crear.novedades", "editar.novedades"),
     NovedadController.obtenerTodos
 );
 

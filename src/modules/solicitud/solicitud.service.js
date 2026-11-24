@@ -35,7 +35,7 @@ class SolicitudService {
         datos.descripcion = datos.descripcion.trim();
         datos.origen = datos.origen.trim();
         datos.destino = datos.destino.trim();
-        datos.prioridad = datos.prioridad.trim().toUpperCase();
+        datos.prioridad = (datos.prioridad || "MEDIA").trim().toUpperCase();
 
         if (!mongoose.Types.ObjectId.isValid(datos.cliente)) {
             throw new AppError(
@@ -169,6 +169,18 @@ class SolicitudService {
         if (!solicitud) {
             throw new AppError("Solicitud no encontrada.", 404);
         }
+
+        try {
+            const servicio = await ServicioRepository.obtenerPorSolicitud(id);
+            if (servicio) {
+                const solObj = solicitud.toObject ? solicitud.toObject() : { ...solicitud };
+                solObj.servicio = servicio;
+                solObj.fotosIniciales = servicio.fotosIniciales || [];
+                solObj.fotosEntrega = servicio.fotosEntrega || [];
+                solObj.imagenesServicio = (servicio.imagenes || []).map(img => typeof img === 'object' && img.url ? img.url : String(img));
+                return solObj;
+            }
+        } catch (_) {}
 
         return solicitud;
     }
