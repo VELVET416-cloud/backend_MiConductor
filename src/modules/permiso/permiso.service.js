@@ -1,13 +1,8 @@
 import mongoose from "mongoose";
 
 import permisoRepository from "./permiso.repository.js";
-import Rol from "../rol/rol.model.js";
-import { seedPermisos } from "../../seeders/permiso.seeder.js";
-import { seedRoles } from "../../seeders/rol.seeder.js";
 
 import AppError from "../../utils/AppError.js";
-
-let permisosVerificadosEnRuntime = false;
 
 class PermisoService {
 
@@ -37,31 +32,7 @@ class PermisoService {
 
     async obtenerTodos() {
 
-        let permisos = await permisoRepository.obtenerTodos();
-
-        if (!permisosVerificadosEnRuntime) {
-            permisosVerificadosEnRuntime = true;
-            const codigosExistentes = new Set(permisos.map(p => p.codigo));
-            const codigosEsperados = [
-                "crear.roles", "ver.roles", "editar.roles", "eliminar.roles",
-                "crear.permisos", "ver.permisos", "editar.permisos", "eliminar.permisos",
-                "crear.usuarios", "ver.usuarios", "editar.usuarios", "eliminar.usuarios",
-                "crear.vehiculos", "ver.vehiculos", "editar.vehiculos", "eliminar.vehiculos",
-                "crear.conductores", "ver.conductores", "editar.conductores", "eliminar.conductores",
-                "crear.clientes", "ver.clientes", "editar.clientes", "eliminar.clientes",
-                "crear.solicitudes", "asignar.solicitudes", "ruta.solicitudes", "ver.solicitudes", "cancelar.solicitudes",
-                "crear.novedades", "ver.novedades", "editar.novedades", "eliminar.novedades"
-            ];
-
-            const faltanPermisos = codigosEsperados.some(c => !codigosExistentes.has(c));
-            if (faltanPermisos) {
-                await seedPermisos();
-                await seedRoles();
-                permisos = await permisoRepository.obtenerTodos();
-            }
-        }
-
-        return permisos;
+        return await permisoRepository.obtenerTodos();
 
     }
 
@@ -165,11 +136,6 @@ class PermisoService {
                 404
             );
         }
-
-        await Rol.updateMany(
-            { permisos: id },
-            { $pull: { permisos: id } }
-        );
 
         return await permisoRepository.eliminar(id);
 

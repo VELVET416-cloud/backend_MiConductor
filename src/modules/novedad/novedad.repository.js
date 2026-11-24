@@ -3,29 +3,17 @@ import Novedad from "./novedad.model.js";
 const populateNovedad = [
     {
         path: "solicitud",
-        populate: [
-            {
-                path: "cliente",
+        populate: {
+            path: "cliente",
+            populate: {
+                path: "usuario",
+                select: "-password",
                 populate: {
-                    path: "usuario",
-                    select: "-password",
-                    populate: {
-                        path: "rol",
-                        select: "nombre descripcion"
-                    }
+                    path: "rol",
+                    select: "nombre descripcion"
                 }
-            },
-            {
-                path: "conductorAsignado",
-                populate: {
-                    path: "usuario",
-                    select: "-password"
-                }
-            },
-            {
-                path: "vehiculo"
             }
-        ]
+        }
     },
     {
         path: "conductor",

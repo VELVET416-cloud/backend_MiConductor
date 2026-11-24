@@ -20,4 +20,3 @@ Thumbs.db
 # Archivos temporales
 coverage/
 dist/
-/firebase-credentials.json

@@ -9,30 +9,12 @@ const clienteSchema = new mongoose.Schema(
             unique: true
         },
 
-
-
         direccion: {
             type: String,
             required: [true, "La dirección es obligatoria."],
             trim: true
         },
 
-        foto: {
-            type: String,
-            default: null,
-            trim: true
-        },
-
-        fechaNacimiento: {
-            type: Date,
-            default: null,
-        },
-
-        edad: {
-            type: Number,
-            default: null,
-        },
-        
         estado: {
             type: Boolean,
             default: true
@@ -40,17 +22,9 @@ const clienteSchema = new mongoose.Schema(
     },
     {
         timestamps: true,
-        versionKey: false,
-        toJSON: { virtuals: true },
-        toObject: { virtuals: true }
+        versionKey: false
     }
 );
-
-clienteSchema.virtual("vehiculos", {
-    ref: "Vehiculo",
-    localField: "_id",
-    foreignField: "cliente"
-});
 
 const Cliente = mongoose.model("Cliente", clienteSchema);
 

@@ -1,24 +1,10 @@
-const validateSchema = (schema, property = "body") => {
+const validateSchema = (schema) => {
 
     return async (req, res, next) => {
 
         try {
 
-            const parsed = await schema.parseAsync(
-                req[property]
-            );
-
-            try {
-                req[property] = parsed;
-            } catch (_) {
-                // Compatibilidad con Express 5: req.query o req.params pueden ser getters sin setter
-                Object.defineProperty(req, property, {
-                    value: parsed,
-                    writable: true,
-                    enumerable: true,
-                    configurable: true
-                });
-            }
+            req.body = await schema.parseAsync(req.body);
 
             next();
 

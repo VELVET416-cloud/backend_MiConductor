@@ -1,10 +1,6 @@
 import AppError from "../utils/AppError.js";
 
-const permisoMiddleware = (...permisosRequeridos) => {
-
-    const listaRequeridos = permisosRequeridos
-        .flat()
-        .filter(Boolean);
+const permisoMiddleware = (permisoRequerido) => {
 
     return (req, res, next) => {
 
@@ -17,18 +13,9 @@ const permisoMiddleware = (...permisosRequeridos) => {
             );
         }
 
-        // El ADMINISTRADOR siempre tiene acceso irrestricto
-        if (req.user.rol === "ADMINISTRADOR") {
-            return next();
-        }
+        const permisos = req.user.permisos || [];
 
-        const permisos = Array.isArray(req.user.permisos) ? req.user.permisos : [];
-
-        const tienePermiso = listaRequeridos.some(permiso =>
-            permisos.includes(permiso)
-        );
-
-        if (!tienePermiso) {
+        if (!permisos.includes(permisoRequerido)) {
             return next(
                 new AppError(
                     "No tiene permisos para realizar esta acción.",

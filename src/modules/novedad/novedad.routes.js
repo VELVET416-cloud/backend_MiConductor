@@ -9,32 +9,14 @@ import {
 } from "./novedades.validation.js";
 
 import validateSchema from "../../middlewares/validateSchema.js";
-import authMiddleware from "../../middlewares/auth.middleware.js";
-import permisoMiddleware from "../../middlewares/permiso.middleware.js";
 
 const router = Router();
-
-// Permite a usuarios de la app móvil (CONDUCTOR y CLIENTE) o administradores con permisos
-const permitirMobileOPermiso = (...permisos) => {
-    const checkPermiso = permisoMiddleware(...permisos);
-    return (req, res, next) => {
-        const rolRaw = req.user?.rol?.nombre || req.user?.rol || "";
-        const rolNombre = rolRaw.toString().toUpperCase();
-        if (rolNombre === "CONDUCTOR" || rolNombre === "CONDUCTORES" || rolNombre === "CLIENTE" || rolNombre === "CLIENTES") {
-            return next();
-        }
-        return checkPermiso(req, res, next);
-    };
-};
-
 
 // ======================================================
 // Crear novedad
 // ======================================================
 router.post(
     "/",
-    authMiddleware,
-    permitirMobileOPermiso("crear.novedades"),
     validateSchema(crearNovedadSchema),
     NovedadController.crear
 );
@@ -44,8 +26,6 @@ router.post(
 // ======================================================
 router.get(
     "/",
-    authMiddleware,
-    permitirMobileOPermiso("ver.novedades", "crear.novedades", "editar.novedades"),
     NovedadController.obtenerTodos
 );
 
@@ -70,8 +50,6 @@ router.get(
 // ======================================================
 router.get(
     "/:id",
-    authMiddleware,
-    permisoMiddleware("ver.novedades", "editar.novedades"),
     NovedadController.obtenerPorId
 );
 
@@ -80,8 +58,6 @@ router.get(
 // ======================================================
 router.patch(
     "/:id/estado",
-    authMiddleware,
-    permisoMiddleware("editar.novedades"),
     validateSchema(cambiarEstadoNovedadSchema),
     NovedadController.cambiarEstado
 );
@@ -91,8 +67,6 @@ router.patch(
 // ======================================================
 router.put(
     "/:id",
-    authMiddleware,
-    permisoMiddleware("editar.novedades"),
     validateSchema(actualizarNovedadSchema),
     NovedadController.actualizar
 );
@@ -102,8 +76,6 @@ router.put(
 // ======================================================
 router.delete(
     "/:id",
-    authMiddleware,
-    permisoMiddleware("eliminar.novedades"),
     NovedadController.eliminar
 );
 

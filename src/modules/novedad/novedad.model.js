@@ -1,36 +1,10 @@
 import mongoose from "mongoose";
 
 const tiposNovedad = [
-    // Prioridad Alta
-    "ACCIDENTE",
-    "FALLA_MECANICA_GRAVE",
-    "FALLA_MECANICA",
-    "EMERGENCIA_MEDICA",
-    "ROBO_ASALTO",
-    "BLOQUEO_TOTAL_VIA",
     "MECANICA",
-
-    // Prioridad Media
-    "TRAFICO_PESADO",
-    "CONTROLES_RETENES",
-    "RETEN_AUTORIDAD",
-    "CAMBIO_RUTA",
-    "DESVIO_OBRAS",
-    "CLIMA_ADVERSO",
-    "PINCHAZO_LLANTA",
     "VIAL",
     "CLIENTE",
-
-    // Prioridad Baja
-    "TRAFICO_LEVE",
-    "GASOLINA_BAJA",
-    "COMBUSTIBLE_BAJO",
-    "RETRASO_CLIENTE",
-    "PARADA_NO_PROGRAMADA",
-    "INFO_RUTA",
     "ADMINISTRATIVA",
-    "SALUD",
-    "OTRO",
     "OTROS"
 ];
 
@@ -38,15 +12,10 @@ const severidadesNovedad = [
     "BAJA",
     "MEDIA",
     "ALTA",
-    "CRITICA",
-    "URGENTE"
+    "CRITICA"
 ];
 
 const estadosNovedad = [
-    "POR_REVISAR",
-    "REVISADO",
-    "RESUELTO",
-    "CERRADO",
     "PENDIENTE",
     "EN_ATENCION",
     "RESUELTA",
@@ -57,7 +26,7 @@ const novedadSchema = new mongoose.Schema(
     {
         titulo: {
             type: String,
-            default: "Novedad en ruta",
+            required: [true, "El título de la novedad es obligatorio."],
             trim: true,
             maxlength: 200
         },
@@ -91,13 +60,6 @@ const novedadSchema = new mongoose.Schema(
             uppercase: true
         },
 
-        motivoOtro: {
-            type: String,
-            trim: true,
-            maxlength: 500,
-            default: null
-        },
-
         solicitud: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Solicitud",
@@ -123,69 +85,9 @@ const novedadSchema = new mongoose.Schema(
                 values: estadosNovedad,
                 message: "El estado de la novedad no es válido."
             },
-            default: "POR_REVISAR",
+            default: "PENDIENTE",
             trim: true,
             uppercase: true
-        },
-
-        // Geolocalización requerida y enviada por el sistema móvil
-        ubicacion: {
-            lat: {
-                type: Number,
-                default: null
-            },
-            lng: {
-                type: Number,
-                default: null
-            },
-            direccion: {
-                type: String,
-                trim: true,
-                default: null
-            }
-        },
-
-        // Trazabilidad de ruta inicial y nueva ruta (especialmente en Cambio de ruta)
-        rutaInicial: {
-            origen: {
-                type: String,
-                trim: true,
-                default: null
-            },
-            destino: {
-                type: String,
-                trim: true,
-                default: null
-            },
-            coordenadas: {
-                type: Array,
-                default: []
-            },
-            polyline: {
-                type: String,
-                default: null
-            }
-        },
-
-        rutaNueva: {
-            origen: {
-                type: String,
-                trim: true,
-                default: null
-            },
-            destino: {
-                type: String,
-                trim: true,
-                default: null
-            },
-            coordenadas: {
-                type: Array,
-                default: []
-            },
-            polyline: {
-                type: String,
-                default: null
-            }
         },
 
         fechaCierre: {
@@ -200,53 +102,10 @@ const novedadSchema = new mongoose.Schema(
             default: null
         },
 
-        notasResolucion: {
-            type: String,
-            trim: true,
-            maxlength: 1500,
-            default: null
-        },
-
-        historialNotas: [
-            {
-                autor: {
-                    type: String,
-                    default: "Administrador"
-                },
-                usuario: {
-                    type: mongoose.Schema.Types.ObjectId,
-                    ref: "Usuario",
-                    default: null
-                },
-                estadoAnterior: {
-                    type: String,
-                    default: null
-                },
-                nuevoEstado: {
-                    type: String,
-                    default: null
-                },
-                nota: {
-                    type: String,
-                    required: true,
-                    trim: true
-                },
-                fecha: {
-                    type: Date,
-                    default: Date.now
-                }
-            }
-        ],
-
         evidenciaUrl: {
             type: String,
             trim: true,
             default: null
-        },
-
-        fotosEvidencia: {
-            type: [String],
-            default: []
         },
 
         estado: {
@@ -262,5 +121,4 @@ const novedadSchema = new mongoose.Schema(
 
 const Novedad = mongoose.model("Novedad", novedadSchema);
 
-export { tiposNovedad, severidadesNovedad, estadosNovedad };
 export default Novedad;
