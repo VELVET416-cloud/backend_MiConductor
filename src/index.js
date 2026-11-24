@@ -1,42 +1,3 @@
-// import http from "http";
-
-// import app from "./app.js";
-
-// import { env } from "./config/env.js";
-// import { connectDB } from "./config/database.js";
-
-// import { initSocket } from "./config/socket.js";
-// import { registerSocketEvents } from "./sockets/index.js";
-
-// const startServer = async () => {
-
-//     if (env.MONGO_URI) {
-
-//         await connectDB();
-
-//     } else {
-
-//         console.log("⚠ MongoDB aún no está configurado.");
-
-//     }
-
-//     const server = http.createServer(app);
-
-//     const io = initSocket(server);
-
-//     registerSocketEvents(io);
-
-//     server.listen(env.PORT, () => {
-
-//         console.log(`🚀 Servidor ejecutándose en el puerto ${env.PORT}`);
-
-//     });
-
-// };
-
-// startServer();
-
-
 import http from "http";
 import app from "./app.js";
 import { env } from "./config/env.js";
@@ -46,11 +7,16 @@ import { registerSocketEvents } from "./sockets/index.js";
 
 import { seedRoles } from "./seeders/rol.seeder.js";
 import { seedPermisos } from "./seeders/permiso.seeder.js";
+import { initNotificacionListeners } from "./modules/notificacion/notificacion.listener.js";
+import initFirebase from "./config/firebase.js";
 
 const startServer = async () => {
   await connectDB();
   await seedPermisos();
-  await seedRoles()
+  await seedRoles();
+
+  initFirebase();
+  initNotificacionListeners();
 
   const server = http.createServer(app);
 
@@ -58,9 +24,20 @@ const startServer = async () => {
 
   registerSocketEvents(io);
 
-  server.listen(env.PORT, () => {
+  server.listen(env.PORT, "0.0.0.0", () => {
     console.log(`🚀 Servidor ejecutándose en el puerto ${env.PORT}`);
   });
 };
 
+process.on("uncaughtException", (err) => {
+  console.error("🔥 UNCAUGHT EXCEPTION:", err);
+});
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("🔥 UNHANDLED REJECTION:", reason);
+});
+process.on("exit", (code) => {
+  console.log(`Node process exiting with code: ${code}`);
+});
+
 startServer();
+
