@@ -9,8 +9,6 @@ import { env } from "./config/env.js";
 import errorMiddleware from "./middlewares/error.middleware.js";
 import notFound from "./middlewares/notFound.middleware.js";
 
-// import rolRoutes from "./modules/rol/rol.routes.js";
-
 const app = express();
 
 app.get("/", (req, res) => {
@@ -20,12 +18,33 @@ app.get("/", (req, res) => {
   });
 });
 
-app.use(
-  cors({
-    origin: env.CLIENT_URL,
-    credentials: true,
-  })
-);
+// Configuración de orígenes permitidos
+const allowedOrigins = (env.CLIENT_URL || "")
+  .split(",")
+  .map((origin) => origin.trim().replace(/\/+$/, ""))
+  .filter(Boolean);
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Permitir solicitudes sin origin (Postman y aplicaciones móviles)
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    const normalizedOrigin = origin.replace(/\/+$/, "");
+
+    if (allowedOrigins.includes(normalizedOrigin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error("Origen no permitido por CORS"));
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
+
+app.use(cors(corsOptions));
 
 app.use(helmet());
 
@@ -40,6 +59,5 @@ app.use("/api", routes);
 app.use(errorMiddleware);
 
 app.use(notFound);
-
 
 export default app;
