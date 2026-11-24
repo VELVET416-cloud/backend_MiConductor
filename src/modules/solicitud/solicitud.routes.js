@@ -15,6 +15,19 @@ import permisoMiddleware from "../../middlewares/permiso.middleware.js";
 
 const router = Router();
 
+// Permite a usuarios de la app móvil (CLIENTE y CONDUCTOR) o administradores con permisos
+const permitirMobileOPermiso = (...permisos) => {
+    const checkPermiso = permisoMiddleware(...permisos);
+    return (req, res, next) => {
+        const rolRaw = req.user?.rol?.nombre || req.user?.rol || "";
+        const rolNombre = rolRaw.toString().toUpperCase();
+        if (rolNombre === "CLIENTE" || rolNombre === "CLIENTES" || rolNombre === "CONDUCTOR" || rolNombre === "CONDUCTORES") {
+            return next();
+        }
+        return checkPermiso(req, res, next);
+    };
+};
+
 // ======================================================
 // Crear solicitud como invitado (Pública / Sin token)
 // ======================================================
@@ -30,7 +43,7 @@ router.post(
 router.post(
     "/",
     authMiddleware,
-    permisoMiddleware("crear.solicitudes"),
+    permitirMobileOPermiso("crear.solicitudes"),
     validarCrearSolicitud,
     SolicitudController.crear
 );
@@ -41,7 +54,7 @@ router.post(
 router.get(
     "/",
     authMiddleware,
-    permisoMiddleware("ver.solicitudes", "crear.solicitudes", "asignar.solicitudes", "ruta.solicitudes", "cancelar.solicitudes", "crear.novedades"),
+    permitirMobileOPermiso("ver.solicitudes", "crear.solicitudes", "asignar.solicitudes", "ruta.solicitudes", "cancelar.solicitudes", "crear.novedades", "ver.conductores"),
     SolicitudController.obtenerTodos
 );
 
@@ -51,7 +64,7 @@ router.get(
 router.get(
     "/:id",
     authMiddleware,
-    permisoMiddleware("ver.solicitudes", "asignar.solicitudes", "ruta.solicitudes", "cancelar.solicitudes"),
+    permitirMobileOPermiso("ver.solicitudes", "asignar.solicitudes", "ruta.solicitudes", "cancelar.solicitudes", "ver.conductores"),
     SolicitudController.obtenerPorId
 );
 
@@ -72,7 +85,7 @@ router.patch(
 router.patch(
     "/:id/cancelar",
     authMiddleware,
-    permisoMiddleware("cancelar.solicitudes"),
+    permitirMobileOPermiso("cancelar.solicitudes"),
     SolicitudController.cancelar
 );
 
@@ -100,7 +113,7 @@ router.patch(
 router.put(
     "/:id",
     authMiddleware,
-    permisoMiddleware("editar.solicitudes", "asignar.solicitudes", "cancelar.solicitudes", "crear.solicitudes"),
+    permitirMobileOPermiso("editar.solicitudes", "asignar.solicitudes", "cancelar.solicitudes", "crear.solicitudes"),
     validarActualizarSolicitud,
     SolicitudController.actualizar
 );

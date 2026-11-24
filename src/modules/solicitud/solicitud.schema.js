@@ -118,7 +118,7 @@ const solicitudBaseSchema = z.object({
 
     fechaProgramada: z.coerce.date().optional(),
 
-    prioridad: prioridadSchema,
+    prioridad: prioridadSchema.default("MEDIA").optional(),
 
     calificacionConductor: z.number().int().min(1).max(5).optional().nullable(),
 

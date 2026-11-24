@@ -43,7 +43,8 @@ export const seedRoles = async () => {
             permisos: obtenerPermisos(
 
                 `${ACCIONES.VER}.${MODULOS.CONDUCTORES}`,
-                `${ACCIONES.EDITAR}.${MODULOS.CONDUCTORES}`
+                `${ACCIONES.EDITAR}.${MODULOS.CONDUCTORES}`,
+                `${ACCIONES.VER}.${MODULOS.SOLICITUDES}`
 
             ),
 
@@ -83,7 +84,7 @@ export const seedRoles = async () => {
             });
 
             console.log(
-                `✅ Rol ${datosRol.nombre} creado.`
+                `Rol ${datosRol.nombre} creado.`
             );
 
         } else {
@@ -96,13 +97,13 @@ export const seedRoles = async () => {
             await rol.save();
 
             console.log(
-                `♻ Rol ${datosRol.nombre} actualizado.`
+                `Rol ${datosRol.nombre} actualizado.`
             );
 
         }
 
     }
 
-    console.log("✔ Seed de roles verificado.");
+    console.log("Seed de roles verificado.");
 
 };

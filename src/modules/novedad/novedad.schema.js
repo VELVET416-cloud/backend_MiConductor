@@ -83,7 +83,7 @@ const novedadBaseSchema = z.object({
 
     conductor: nullableObjectIdSchema,
 
-    usuarioRegistro: objectIdSchema,
+    usuarioRegistro: nullableObjectIdSchema,
 
     estadoNovedad: estadoNovedadSchema
         .default("POR_REVISAR")
