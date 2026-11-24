@@ -19,7 +19,7 @@ const router = Router();
 router.post(
     "/",
     authMiddleware,
-    permisoMiddleware("crear.roles"),
+    permisoMiddleware("roles.crear"),
     validateSchema(crearRolSchema),
     rolController.crear
 );
@@ -30,7 +30,7 @@ router.post(
 router.get(
     "/",
     authMiddleware,
-    permisoMiddleware("ver.roles", "crear.roles", "editar.roles", "ver.usuarios", "crear.usuarios", "editar.usuarios"),
+    permisoMiddleware("roles.ver"),
     rolController.obtenerTodos
 );
 
@@ -40,7 +40,7 @@ router.get(
 router.get(
     "/:id",
     authMiddleware,
-    permisoMiddleware("ver.roles", "editar.roles"),
+    permisoMiddleware("roles.ver"),
     rolController.obtenerPorId
 );
 
@@ -50,7 +50,7 @@ router.get(
 router.put(
     "/:id",
     authMiddleware,
-    permisoMiddleware("editar.roles"),
+    permisoMiddleware("roles.editar"),
     validateSchema(actualizarRolSchema),
     rolController.actualizar
 );
@@ -61,7 +61,7 @@ router.put(
 router.delete(
     "/:id",
     authMiddleware,
-    permisoMiddleware("eliminar.roles"),
+    permisoMiddleware("roles.eliminar"),
     rolController.eliminar
 );
 

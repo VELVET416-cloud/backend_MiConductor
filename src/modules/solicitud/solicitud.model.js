@@ -1,68 +1,26 @@
 import mongoose from "mongoose";
-import { randomBytes } from "node:crypto";
-
-const generarCodigoSolicitud = () => {
-    const fecha = new Date();
-    const fechaCodigo = [
-        fecha.getFullYear(),
-        String(fecha.getMonth() + 1).padStart(2, "0"),
-        String(fecha.getDate()).padStart(2, "0")
-    ].join("");
-
-    const aleatorio = randomBytes(4).toString("hex").toUpperCase();
-
-    return `SOL-${fechaCodigo}-${aleatorio}`;
-};
 
 const solicitudSchema = new mongoose.Schema(
     {
         codigo: {
             type: String,
-            required: true,
+            required: [true, "El código es obligatorio."],
             unique: true,
             trim: true,
-            uppercase: true,
-            default: generarCodigoSolicitud
-        },
-
-        esInvitado: {
-            type: Boolean,
-            default: false
-        },
-
-        esParaTercero: {
-            type: Boolean,
-            default: false
-        },
-
-        beneficiario: {
-            type: Object,
-            default: null
-        },
-
-        solicitante: {
-            type: Object,
-            default: null
-        },
-
-        vehiculoInfo: {
-            type: Object,
-            default: null
+            uppercase: true
         },
 
         cliente: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Cliente",
-            required: false,
-            default: null
+            required: [true, "El cliente es obligatorio."]
         },
 
         correoCliente: {
             type: String,
-            required: false,
+            required: [true, "El correo del cliente es obligatorio."],
             trim: true,
-            lowercase: true,
-            default: null
+            lowercase: true
         },
 
         conductorAsignado: {
@@ -103,14 +61,12 @@ const solicitudSchema = new mongoose.Schema(
 
         fechaProgramada: {
             type: Date,
-            required: true,
-            default: Date.now
+            required: [true, "La fecha programada es obligatoria."]
         },
 
         prioridad: {
             type: String,
             required: [true, "La prioridad es obligatoria."],
-            default: "MEDIA",
             enum: ["BAJA", "MEDIA", "ALTA", "URGENTE"],
             trim: true,
             uppercase: true
@@ -119,59 +75,10 @@ const solicitudSchema = new mongoose.Schema(
         estado: {
             type: String,
             required: true,
-            enum: [
-                "PENDIENTE",
-                "EN_PROCESO",
-                "COMPLETADO",
-                "CANCELADO"
-            ],
+            enum: ["PENDIENTE", "EN_PROCESO", "COMPLETADO", "CANCELADO"],
             default: "PENDIENTE",
             trim: true,
             uppercase: true
-        },
-
-        destinoInicial: {
-            type: String,
-            trim: true,
-            default: null
-        },
-
-        cambioRuta: {
-            motivo: {
-                type: String,
-                trim: true,
-                default: null
-            },
-            nuevoDestino: {
-                type: String,
-                trim: true,
-                default: null
-            },
-            fechaCambio: {
-                type: Date,
-                default: null
-            }
-        },
-
-        calificacionConductor: {
-            type: Number,
-            min: 1,
-            max: 5,
-            default: null
-        },
-
-        comentarioCliente: {
-            type: String,
-            trim: true,
-            maxlength: 1000,
-            default: null
-        },
-
-        comentarioConductor: {
-            type: String,
-            trim: true,
-            maxlength: 1000,
-            default: null
         }
     },
     {
@@ -179,8 +86,6 @@ const solicitudSchema = new mongoose.Schema(
         versionKey: false
     }
 );
-
-// solicitudSchema.index({ codigo: 1 }, { unique: true }); // Definido en campo
 
 const Solicitud = mongoose.model("Solicitud", solicitudSchema);
 

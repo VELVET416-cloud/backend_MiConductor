@@ -1,125 +1,83 @@
-// modules/roles/rol.repository.js
-
 import Rol from "./rol.model.js";
-import Usuario from "../usuario/usuario.model.js";
 
 class RolRepository {
 
     async crear(datos) {
 
-        const rolCreado = await Rol.create(datos);
-        return await Rol.findById(rolCreado._id)
-            .populate({
-                path: "permisos",
-                select: "nombre codigo modulo descripcion activo",
-                match: { activo: true }
-            });
+        return await Rol.create(datos);
 
     }
 
     async obtenerTodos() {
 
-        const roles = await Rol.find({})
-            .populate({
-                path: "permisos",
-                select: "nombre codigo modulo descripcion activo",
-                match: { activo: true }
-            })
+        return await Rol.find({
+            activo: true
+        })
+            .populate(
+                "permisos",
+                "nombre codigo modulo descripcion activo"
+            )
             .sort({
                 nombre: 1
-            })
-            .lean();
-
-        const rolesConUsuarios = await Promise.all(
-
-            roles.map(async (rol) => {
-
-                const usuarios = await Usuario.countDocuments({
-                    rol: rol._id,
-                    estado: true
-                });
-
-                return {
-                    ...rol,
-                    usuariosAsignados: usuarios
-                };
-
-            })
-
-        );
-
-        return rolesConUsuarios;
+            });
 
     }
 
     async obtenerPorId(id) {
 
-        const rol = await Rol.findOne({
-            _id: id
+        return await Rol.findOne({
+            _id: id,
+            activo: true
         })
-            .populate({
-                path: "permisos",
-                select: "nombre codigo modulo descripcion activo",
-                match: { activo: true }
-            })
-            .lean();
-
-        if (!rol) {
-            return null;
-        }
-
-        const usuarios = await Usuario.countDocuments({
-            rol: rol._id,
-            estado: true
-        });
-
-        return {
-            ...rol,
-            usuariosAsignados: usuarios
-        };
+            .populate(
+                "permisos",
+                "nombre codigo modulo descripcion activo"
+            );
 
     }
-
 
     async obtenerPorNombre(nombre) {
 
         return await Rol.findOne({
-            nombre
+            nombre,
+            activo: true
         });
 
     }
-
-
 
     async actualizar(id, datos) {
 
         return await Rol.findOneAndUpdate(
             {
-                _id: id
+                _id: id,
+                activo: true
             },
             datos,
             {
                 new: true,
                 runValidators: true
             }
-        )
-            .populate({
-                path: "permisos",
-                select: "nombre codigo modulo descripcion activo",
-                match: { activo: true }
-            });
+        ).populate(
+            "permisos",
+            "nombre codigo modulo descripcion activo"
+        );
 
     }
 
-
-
     async eliminar(id) {
 
-        return await Rol.findByIdAndDelete(id);
+        return await Rol.findByIdAndUpdate(
+            id,
+            {
+                activo: false
+            },
+            {
+                new: true
+            }
+        );
 
     }
 
 }
-
 
 export default new RolRepository();

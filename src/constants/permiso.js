@@ -8,10 +8,7 @@ export const ACCIONES = {
     CREAR: "crear",
     VER: "ver",
     EDITAR: "editar",
-    ELIMINAR: "eliminar",
-    ASIGNAR: "asignar",
-    RUTA: "ruta",
-    CANCELAR: "cancelar"
+    ELIMINAR: "eliminar"
 };
 
 export const MODULOS = {
@@ -19,8 +16,5 @@ export const MODULOS = {
     PERMISOS: "permisos",
     USUARIOS: "usuarios",
     CONDUCTORES: "conductores",
-    NOVEDADES: "novedades",
-    VEHICULOS: "vehiculos",
-    CLIENTES: "clientes",
-    SOLICITUDES: "solicitudes"
+    NOVEDADES: "novedades"
 };

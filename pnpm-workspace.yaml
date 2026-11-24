@@ -1,4 +1,2 @@
 allowBuilds:
-  '@firebase/util': true
   bcrypt: false
-  protobufjs: true

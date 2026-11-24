@@ -24,16 +24,12 @@ class VehiculoController {
     // Obtener todos
     async obtenerTodos(req, res, next) {
         try {
-            const page = parseInt(req.query.page) || 1;
-            const limit = parseInt(req.query.limit) || 10;
-            const search = req.query.search || '';
-            const estado = req.query.estado || '';
 
-            const vehiculosData = await VehiculoService.obtenerTodos(page, limit, search, estado);
+            const vehiculos = await VehiculoService.obtenerTodos();
 
             return successResponse(
                 res,
-                vehiculosData,
+                vehiculos,
                 "Vehículos obtenidos correctamente."
             );
 
@@ -118,44 +114,6 @@ class VehiculoController {
                 "Vehículo eliminado correctamente."
             );
 
-        } catch (error) {
-            next(error);
-        }
-    }
-
-    // Verificar disponibilidad de placa
-    async verificarPlaca(req, res, next) {
-        try {
-            const { placa } = req.params;
-            const resultado = await VehiculoService.verificarPlaca(placa);
-
-            return successResponse(
-                res,
-                resultado,
-                resultado.mensaje
-            );
-        } catch (error) {
-            next(error);
-        }
-    }
-
-    // Cambiar estado del vehículo
-    async cambiarEstado(req, res, next) {
-        try {
-            const { id } = req.params;
-            const { estadoVehiculo, motivo } = req.body;
-
-            const vehiculo = await VehiculoService.cambiarEstado(
-                id,
-                estadoVehiculo,
-                motivo
-            );
-
-            return successResponse(
-                res,
-                vehiculo,
-                `Estado del vehículo actualizado a '${estadoVehiculo}' exitosamente.`
-            );
         } catch (error) {
             next(error);
         }
