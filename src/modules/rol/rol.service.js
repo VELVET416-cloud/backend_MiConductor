@@ -12,6 +12,13 @@ class RolService {
         datos.nombre = datos.nombre.trim().toUpperCase();
         datos.descripcion = datos.descripcion.trim();
 
+        if (datos.nombre === "SUPERADMINISTRADOR") {
+            throw new AppError(
+                "El rol SUPERADMINISTRADOR es exclusivo del sistema y no puede crearse manualmente.",
+                403
+            );
+        }
+
         // Validar nombre repetido
         const existe = await rolRepository.obtenerPorNombre(
             datos.nombre
@@ -24,43 +31,48 @@ class RolService {
             );
         }
 
-        // Validar permisos
-        if (Array.isArray(datos.permisos)) {
-            const idsUnicos = [...new Set(datos.permisos.map(id => String(id).trim()).filter(Boolean))];
-
-            if (idsUnicos.length > 0) {
-                const tieneInvalido = idsUnicos.some(id => !mongoose.Types.ObjectId.isValid(id));
-                if (tieneInvalido) {
-                    throw new AppError(
-                        "Uno o más identificadores de permisos son inválidos.",
-                        400
-                    );
-                }
-
-                const permisos = await Permiso.find({
-                    _id: {
-                        $in: idsUnicos
-                    },
-                    activo: true
-                });
-
-                if (permisos.length !== idsUnicos.length) {
-                    throw new AppError(
-                        "Uno o más permisos no existen.",
-                        400
-                    );
-                }
-
-                datos.permisos = permisos.map(
-                    permiso => permiso._id
-                );
-            } else {
-                datos.permisos = [];
-            }
-
-        } else {
-            datos.permisos = [];
+        // Validar permisos (obligatorio al menos un permiso al crear un rol)
+        if (!Array.isArray(datos.permisos)) {
+            throw new AppError(
+                "Debes asignar al menos un permiso al rol.",
+                400
+            );
         }
+
+        const idsUnicos = [...new Set(datos.permisos.map(id => String(id).trim()).filter(Boolean))];
+
+        if (idsUnicos.length === 0) {
+            throw new AppError(
+                "Debes asignar al menos un permiso al rol.",
+                400
+            );
+        }
+
+        const tieneInvalido = idsUnicos.some(id => !mongoose.Types.ObjectId.isValid(id));
+        if (tieneInvalido) {
+            throw new AppError(
+                "Uno o más identificadores de permisos son inválidos.",
+                400
+            );
+        }
+
+        const permisos = await Permiso.find({
+            _id: {
+                $in: idsUnicos
+            },
+            activo: true
+        });
+
+        if (permisos.length !== idsUnicos.length) {
+            throw new AppError(
+                "Uno o más permisos no existen.",
+                400
+            );
+        }
+
+        datos.permisos = permisos.map(
+            permiso => permiso._id
+        );
 
         return await rolRepository.crear(datos);
 
@@ -109,6 +121,21 @@ class RolService {
             throw new AppError(
                 "Rol no encontrado.",
                 404
+            );
+        }
+
+        // Protección absoluta del rol SUPERADMINISTRADOR (ningún campo ni permiso puede modificarse)
+        if (String(rol.nombre || "").trim().toUpperCase() === "SUPERADMINISTRADOR") {
+            throw new AppError(
+                "El rol SUPERADMINISTRADOR está protegido y no puede ser modificado ni desactivado.",
+                403
+            );
+        }
+
+        if (datos.nombre && datos.nombre.trim().toUpperCase() === "SUPERADMINISTRADOR") {
+            throw new AppError(
+                "No se puede renombrar un rol a SUPERADMINISTRADOR.",
+                403
             );
         }
         // No permitir desactivar un rol que tenga usuarios activos
@@ -254,6 +281,14 @@ class RolService {
             throw new AppError(
                 "Rol no encontrado.",
                 404
+            );
+        }
+
+        // Protección absoluta del rol SUPERADMINISTRADOR
+        if (String(rol.nombre || "").trim().toUpperCase() === "SUPERADMINISTRADOR") {
+            throw new AppError(
+                "El rol SUPERADMINISTRADOR está protegido y no puede eliminarse.",
+                403
             );
         }
 

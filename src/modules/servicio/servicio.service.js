@@ -17,7 +17,7 @@ const verificarPermisosGestionServicio = async (servicio, usuario) => {
     const rol = (usuario.rol || "").toUpperCase();
 
     // 1. Administrador siempre tiene acceso total
-    if (rol === ROLES.ADMIN || rol === "ADMINISTRADOR" || rol === "ADMIN") {
+    if (rol === ROLES.SUPERADMIN || rol === ROLES.ADMIN || rol === "SUPERADMINISTRADOR" || rol === "ADMINISTRADOR" || rol === "ADMIN") {
         return;
     }
 
@@ -467,7 +467,7 @@ class ServicioService {
         await verificarPermisosGestionServicio(servicio, usuario);
 
         // No permitir borrar evidencias de servicios finalizados o cancelados salvo por administrador
-        const esAdmin = usuario && [ROLES.ADMIN, "ADMINISTRADOR", "ADMIN"].includes((usuario.rol || "").toUpperCase());
+        const esAdmin = usuario && [ROLES.SUPERADMIN, ROLES.ADMIN, "SUPERADMINISTRADOR", "ADMINISTRADOR", "ADMIN"].includes((usuario.rol || "").toUpperCase());
         if (["FINALIZADO", "CANCELADO"].includes(servicio.estado) && !esAdmin) {
             throw new AppError(
                 "No se pueden eliminar evidencias de un servicio finalizado o cancelado.",

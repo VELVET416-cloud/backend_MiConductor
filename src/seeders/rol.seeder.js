@@ -25,6 +25,18 @@ export const seedRoles = async () => {
     const roles = [
 
         {
+            nombre: ROLES.SUPERADMIN,
+            descripcion: "Superadministrador del sistema con control total y protección permanente.",
+
+            // El superadministrador siempre tiene TODOS los permisos disponibles
+            permisos: todosLosPermisos.map(
+                permiso => permiso._id
+            ),
+
+            esSistema: true
+        },
+
+        {
             nombre: ROLES.ADMIN,
             descripcion: "Administrador general del sistema.",
 

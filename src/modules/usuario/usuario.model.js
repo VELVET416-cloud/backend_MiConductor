@@ -55,6 +55,16 @@ const usuarioSchema = new mongoose.Schema(
             default: null
         },
 
+        aceptaTerminos: {
+            type: Boolean,
+            default: false
+        },
+
+        fechaAceptacionTerminos: {
+            type: Date,
+            default: null
+        },
+
         password: {
             type: String,
             required: [true, "La contraseña es obligatoria."],
@@ -99,6 +109,11 @@ const usuarioSchema = new mongoose.Schema(
         estado: {
             type: Boolean,
             default: true
+        },
+
+        esSuperAdmin: {
+            type: Boolean,
+            default: false
         },
 
         rol: {

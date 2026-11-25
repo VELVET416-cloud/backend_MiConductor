@@ -8,7 +8,13 @@ export const connectDB = async () => {
     console.log("MONGO_URI:", env.MONGO_URI);
     console.log("=====================================");
 
-    await mongoose.connect(env.MONGO_URI);
+    await mongoose.connect(env.MONGO_URI, {
+      maxPoolSize: 20,
+      minPoolSize: 2,
+      serverSelectionTimeoutMS: 10000,
+      socketTimeoutMS: 45000,
+      family: 4,
+    });
 
     console.log("✅ Base de datos conectada correctamente.");
   } catch (error) {
