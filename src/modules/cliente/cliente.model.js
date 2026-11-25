@@ -32,6 +32,16 @@ const clienteSchema = new mongoose.Schema(
             type: Number,
             default: null,
         },
+
+        aceptaTerminos: {
+            type: Boolean,
+            default: false,
+        },
+
+        fechaAceptacionTerminos: {
+            type: Date,
+            default: null,
+        },
         
         estado: {
             type: Boolean,

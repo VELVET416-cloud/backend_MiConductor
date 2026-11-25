@@ -12,6 +12,9 @@ class EmailService {
             if (isGmail) {
                 return nodemailer.createTransport({
                     service: "gmail",
+                    connectionTimeout: 10000,
+                    greetingTimeout: 10000,
+                    socketTimeout: 15000,
                     auth: {
                         user: env.MAIL_USER,
                         pass: env.MAIL_PASSWORD
@@ -23,6 +26,9 @@ class EmailService {
                 host: env.MAIL_HOST || "smtp.gmail.com",
                 port: Number(env.MAIL_PORT) || 587,
                 secure: Number(env.MAIL_PORT) === 465,
+                connectionTimeout: 10000,
+                greetingTimeout: 10000,
+                socketTimeout: 15000,
                 auth: {
                     user: env.MAIL_USER,
                     pass: env.MAIL_PASSWORD

@@ -155,6 +155,29 @@ class UsuarioHelper {
 
         }
 
+        const esObjetivoSuperAdmin =
+            usuario.esSuperAdmin === true ||
+            String(usuario.rol?.nombre || "").toUpperCase() === "SUPERADMINISTRADOR";
+
+        if (esObjetivoSuperAdmin) {
+            if (datos.estado === false) {
+                throw new AppError(
+                    "El usuario Superadministrador no puede ser desactivado.",
+                    403
+                );
+            }
+            if (datos.rol !== undefined) {
+                const rolActualId = String(usuario.rol?._id || usuario.rol || "");
+                if (String(datos.rol) !== rolActualId) {
+                    throw new AppError(
+                        "El rol del usuario Superadministrador no puede ser modificado.",
+                        403
+                    );
+                }
+            }
+            delete datos.esSuperAdmin;
+        }
+
 
         if (datos.nombre) {
 
@@ -290,12 +313,35 @@ class UsuarioHelper {
     }
 
     async eliminar(id) {
+        const usuario = await UsuarioRepository.obtenerPorId(id);
+        if (
+            usuario &&
+            (usuario.esSuperAdmin === true ||
+                String(usuario.rol?.nombre || "").toUpperCase() === "SUPERADMINISTRADOR")
+        ) {
+            throw new AppError(
+                "El usuario Superadministrador está protegido y no puede ser desactivado.",
+                403
+            );
+        }
 
         return await UsuarioRepository.eliminar(id);
 
     }
 
     async eliminarFisico(id) {
+        const usuario = await UsuarioRepository.obtenerPorId(id);
+        if (
+            usuario &&
+            (usuario.esSuperAdmin === true ||
+                String(usuario.rol?.nombre || "").toUpperCase() === "SUPERADMINISTRADOR")
+        ) {
+            throw new AppError(
+                "El usuario Superadministrador está protegido y no puede ser eliminado.",
+                403
+            );
+        }
+
         return await UsuarioRepository.eliminarFisico(id);
     }
 }

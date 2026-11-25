@@ -3,13 +3,49 @@ import UsuarioRepository from "./usuario.repository.js";
 import UsuarioHelper from "./usuario.helper.js";
 import ClienteRepository from "../cliente/cliente.repository.js";
 import VehiculoRepository from "../vehiculo/vehiculo.repository.js";
+import RolRepository from "../rol/rol.repository.js";
 import AppError from "../../utils/AppError.js";
 import EmailService from "../auth/email.service.js";
 import ConductorRepository from "../conductor/conductor.repository.js";
+import { ROLES, isSuperAdminRoleName } from "../../constants/permiso.js";
+
+const esUsuarioSuperAdmin = (usuario) => {
+    if (!usuario) return false;
+    if (usuario.esSuperAdmin === true) return true;
+    const rolNombre =
+        typeof usuario.rol === "object"
+            ? usuario.rol?.nombre || usuario.rol?.name
+            : usuario.rol;
+    return isSuperAdminRoleName(rolNombre);
+};
+
+const validarRolNoEsSuperAdmin = async (rolInput) => {
+    if (!rolInput) return;
+    if (isSuperAdminRoleName(rolInput)) {
+        throw new AppError(
+            "No está permitido asignar el rol SUPERADMINISTRADOR a ningún usuario.",
+            403
+        );
+    }
+    if (mongoose.Types.ObjectId.isValid(rolInput)) {
+        const rolDoc = await RolRepository.obtenerPorId(rolInput);
+        if (rolDoc && isSuperAdminRoleName(rolDoc.nombre)) {
+            throw new AppError(
+                "No está permitido asignar el rol SUPERADMINISTRADOR a ningún usuario.",
+                403
+            );
+        }
+    }
+};
 
 class UsuarioService {
 
     async crear(datos) {
+        await validarRolNoEsSuperAdmin(datos?.rol);
+        if (datos && "esSuperAdmin" in datos) {
+            delete datos.esSuperAdmin;
+        }
+
         const usuario = await UsuarioHelper.crear(datos);
         // Enviar correo de activación de cuenta en segundo plano (asíncrono) para evitar bloqueos/timeouts en el cliente
         const nombreActivacion = `${usuario.nombre || ""} ${usuario.apellido || ""}`.trim() || usuario.nombreCompleto || "Usuario";
@@ -122,10 +158,66 @@ class UsuarioService {
         return usuario;
     }
 
-    async actualizar(id, datos) {
+    async actualizar(id, datos, actor = null) {
         if (!mongoose.Types.ObjectId.isValid(id)) {
             throw new AppError("El id del usuario no es válido.", 400);
         }
+
+        const objetivo = await UsuarioRepository.obtenerPorId(id);
+        if (!objetivo) {
+            throw new AppError("Usuario no encontrado.", 404);
+        }
+
+        // Nunca permitir asignar el rol SUPERADMINISTRADOR a otro usuario
+        if (datos?.rol !== undefined) {
+            const rolActualId = String(objetivo.rol?._id || objetivo.rol || "");
+            if (String(datos.rol) !== rolActualId) {
+                await validarRolNoEsSuperAdmin(datos.rol);
+            }
+        }
+
+        if (datos && "esSuperAdmin" in datos) {
+            delete datos.esSuperAdmin;
+        }
+
+        // Protección estricta del usuario Superadministrador
+        if (esUsuarioSuperAdmin(objetivo)) {
+            const esElMismoSuperAdmin =
+                actor?.id && String(actor.id) === String(objetivo._id);
+
+            if (!esElMismoSuperAdmin) {
+                throw new AppError(
+                    "El usuario Superadministrador está protegido y no puede ser modificado, desactivado ni eliminado.",
+                    403
+                );
+            }
+
+            // Incluso el propio Superadministrador no puede alterar su rol, desactivarse ni cambiar contraseña desde este endpoint
+            if (datos?.estado === false) {
+                throw new AppError(
+                    "La cuenta del Superadministrador no puede ser desactivada.",
+                    403
+                );
+            }
+
+            if (datos?.rol !== undefined) {
+                const rolActualId = String(objetivo.rol?._id || objetivo.rol || "");
+                if (String(datos.rol) !== rolActualId) {
+                    throw new AppError(
+                        "El rol del Superadministrador está protegido y no puede ser modificado.",
+                        403
+                    );
+                }
+            }
+
+            if (datos?.password !== undefined) {
+                throw new AppError(
+                    "Utiliza la opción segura de cambio de contraseña para actualizar las credenciales del Superadministrador.",
+                    403
+                );
+            }
+        }
+
         return await UsuarioHelper.actualizar(id, datos);
     }
 
@@ -134,16 +226,23 @@ class UsuarioService {
             throw new AppError("El id del usuario no es válido.", 400);
         }
 
+        const usuario = await UsuarioRepository.obtenerPorId(id);
+        if (!usuario) {
+            throw new AppError("Usuario no encontrado.", 404);
+        }
+
+        if (esUsuarioSuperAdmin(usuario)) {
+            throw new AppError(
+                "El usuario Superadministrador está protegido y no puede ser eliminado.",
+                403
+            );
+        }
+
         if (currentUserId && id.toString() === currentUserId.toString()) {
             throw new AppError(
                 "No puedes eliminar la cuenta con la que has iniciado sesión actualmente.",
                 400
             );
-        }
-
-        const usuario = await UsuarioRepository.obtenerPorId(id);
-        if (!usuario) {
-            throw new AppError("Usuario no encontrado.", 404);
         }
 
         // Verificar si tiene dependencias asociadas en Conductor

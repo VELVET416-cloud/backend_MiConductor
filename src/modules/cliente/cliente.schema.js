@@ -4,6 +4,45 @@ const ONLY_DIGITS_REGEX = /^\d+$/;
 const ALPHANUMERIC_REGEX = /^[0-9A-Za-z]+$/;
 const NAME_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'-]+$/;
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+const CELULAR_COLOMBIA_REGEX = /^3\d{9}$/;
+const PASSWORD_UPPER_REGEX = /[A-ZÁÉÍÓÚÑ]/;
+const PASSWORD_LOWER_REGEX = /[a-záéíóúñ]/;
+const PASSWORD_NUMBER_REGEX = /\d/;
+const PASSWORD_SPECIAL_REGEX = /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?`~¡¿]/;
+
+export const FIELD_LIMITS = {
+    nombre: { min: 2, max: 50 },
+    apellido: { min: 2, max: 50 },
+    correo: { min: 5, max: 100 },
+    telefono: { min: 10, max: 10 },
+    direccion: { min: 5, max: 120 },
+    password: { min: 8, max: 64 }
+};
+
+export function validateStrongPassword(password) {
+    const pwd = typeof password === "string" ? password : "";
+    if (!pwd) return "La contraseña es obligatoria.";
+    if (/\s/.test(pwd)) return "La contraseña no puede contener espacios.";
+    if (pwd.length < FIELD_LIMITS.password.min) {
+        return `La contraseña debe tener al menos ${FIELD_LIMITS.password.min} caracteres.`;
+    }
+    if (pwd.length > FIELD_LIMITS.password.max) {
+        return `La contraseña no puede superar los ${FIELD_LIMITS.password.max} caracteres.`;
+    }
+    if (!PASSWORD_UPPER_REGEX.test(pwd)) {
+        return "La contraseña debe incluir al menos una letra mayúscula.";
+    }
+    if (!PASSWORD_LOWER_REGEX.test(pwd)) {
+        return "La contraseña debe incluir al menos una letra minúscula.";
+    }
+    if (!PASSWORD_NUMBER_REGEX.test(pwd)) {
+        return "La contraseña debe incluir al menos un número.";
+    }
+    if (!PASSWORD_SPECIAL_REGEX.test(pwd)) {
+        return "La contraseña debe incluir al menos un carácter especial.";
+    }
+    return "";
+}
 
 export const ALLOWED_DOCUMENT_TYPES = ["CC", "TI", "CE", "PPT", "PA"];
 
@@ -104,13 +143,28 @@ export function validateDocumentoPorTipo(val, tipoDoc) {
 
 export function validateMayorDeEdad(fechaNacimiento) {
     if (!fechaNacimiento) return "La fecha de nacimiento es obligatoria.";
-    const fecha = new Date(fechaNacimiento);
+    const cleanStr = String(fechaNacimiento).split("T")[0];
+    const parts = cleanStr.split("-");
+    const fecha =
+        parts.length === 3
+            ? new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]))
+            : new Date(fechaNacimiento);
     if (isNaN(fecha.getTime())) return "Fecha de nacimiento inválida.";
+    if (
+        parts.length === 3 &&
+        (fecha.getFullYear() !== Number(parts[0]) ||
+            fecha.getMonth() !== Number(parts[1]) - 1 ||
+            fecha.getDate() !== Number(parts[2]))
+    ) {
+        return "Fecha de nacimiento inválida.";
+    }
     const hoy = new Date();
-    if (fecha > hoy) return "La fecha de nacimiento no puede ser futura.";
-    let edad = hoy.getFullYear() - fecha.getFullYear();
-    const m = hoy.getMonth() - fecha.getMonth();
-    if (m < 0 || (m === 0 && hoy.getDate() < fecha.getDate())) {
+    const fechaSinHora = new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate());
+    const hoySinHora = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+    if (fechaSinHora > hoySinHora) return "La fecha de nacimiento no puede ser futura.";
+    let edad = hoySinHora.getFullYear() - fechaSinHora.getFullYear();
+    const m = hoySinHora.getMonth() - fechaSinHora.getMonth();
+    if (m < 0 || (m === 0 && hoySinHora.getDate() < fechaSinHora.getDate())) {
         edad--;
     }
     if (edad < 18) {
@@ -124,7 +178,12 @@ export function validateMayorDeEdad(fechaNacimiento) {
 
 export function calcularEdadNumero(fechaNacimiento) {
     if (!fechaNacimiento) return null;
-    const fecha = new Date(fechaNacimiento);
+    const cleanStr = String(fechaNacimiento).split("T")[0];
+    const parts = cleanStr.split("-");
+    const fecha =
+        parts.length === 3
+            ? new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]))
+            : new Date(fechaNacimiento);
     if (isNaN(fecha.getTime())) return null;
     const hoy = new Date();
     let edad = hoy.getFullYear() - fecha.getFullYear();
@@ -135,90 +194,93 @@ export function calcularEdadNumero(fechaNacimiento) {
     return edad >= 0 && edad <= 120 ? edad : null;
 }
 
+const crearClienteBaseShape = {
+    nombre: z
+        .string({
+            required_error: "El nombre es obligatorio.",
+            error: "El nombre es obligatorio."
+        })
+        .trim()
+        .min(FIELD_LIMITS.nombre.min, `El nombre debe tener al menos ${FIELD_LIMITS.nombre.min} caracteres.`)
+        .max(FIELD_LIMITS.nombre.max, `El nombre no puede superar los ${FIELD_LIMITS.nombre.max} caracteres.`)
+        .regex(NAME_REGEX, "El nombre no puede contener números ni caracteres especiales."),
+
+    apellido: z
+        .string({
+            required_error: "El apellido es obligatorio.",
+            error: "El apellido es obligatorio."
+        })
+        .trim()
+        .min(FIELD_LIMITS.apellido.min, `El apellido debe tener al menos ${FIELD_LIMITS.apellido.min} caracteres.`)
+        .max(FIELD_LIMITS.apellido.max, `El apellido no puede superar los ${FIELD_LIMITS.apellido.max} caracteres.`)
+        .regex(NAME_REGEX, "El apellido no puede contener números ni caracteres especiales."),
+
+    tipoDocumento: z
+        .string({
+            required_error: "El tipo de documento es obligatorio.",
+            error: "El tipo de documento es obligatorio."
+        })
+        .trim()
+        .min(1, "El tipo de documento es obligatorio.")
+        .refine((val) => ALLOWED_DOCUMENT_TYPES.includes(normalizeTipoDocumento(val)), {
+            message: "Tipo de documento inválido. Debe ser CC, TI, CE, PPT o Pasaporte."
+        }),
+
+    documento: z
+        .string({
+            required_error: "El número de documento es obligatorio.",
+            error: "El número de documento es obligatorio."
+        })
+        .trim()
+        .min(1, "El número de documento es obligatorio."),
+
+    correo: z
+        .string({
+            required_error: "El correo es obligatorio.",
+            error: "El correo es obligatorio."
+        })
+        .trim()
+        .min(FIELD_LIMITS.correo.min, "El correo es obligatorio.")
+        .max(FIELD_LIMITS.correo.max, `El correo no puede superar los ${FIELD_LIMITS.correo.max} caracteres.`)
+        .regex(EMAIL_REGEX, "Debe ingresar un correo válido."),
+
+    password: z
+        .string({
+            required_error: "La contraseña es obligatoria."
+        })
+        .optional(),
+
+    telefono: z
+        .string({
+            required_error: "El teléfono es obligatorio.",
+            error: "El teléfono es obligatorio."
+        })
+        .trim()
+        .length(10, "El teléfono debe ser un celular colombiano de 10 dígitos.")
+        .regex(CELULAR_COLOMBIA_REGEX, "El teléfono debe ser un celular colombiano de 10 dígitos que empiece por 3."),
+
+    direccion: z
+        .string({
+            required_error: "La dirección es obligatoria.",
+            error: "La dirección es obligatoria."
+        })
+        .trim()
+        .min(FIELD_LIMITS.direccion.min, `La dirección debe tener al menos ${FIELD_LIMITS.direccion.min} caracteres.`)
+        .max(FIELD_LIMITS.direccion.max, `La dirección no puede superar los ${FIELD_LIMITS.direccion.max} caracteres.`),
+
+    fechaNacimiento: z.string().trim().optional(),
+    edad: z.number().nullable().optional(),
+    aceptaTerminos: z.boolean().optional(),
+    fechaAceptacionTerminos: z.string().datetime({ offset: true }).optional().or(z.string().optional()),
+
+    foto: z.string().nullable().optional(),
+
+    rol: z.string().optional(),
+    rolId: z.string().optional()
+};
+
 const crearClienteSchema = z
-    .object({
-        nombre: z
-            .string({
-                required_error: "El nombre es obligatorio.",
-                error: "El nombre es obligatorio."
-            })
-            .trim()
-            .min(2, "El nombre debe tener al menos 2 caracteres.")
-            .max(100, "El nombre no puede superar los 100 caracteres.")
-            .regex(NAME_REGEX, "El nombre no puede contener números ni caracteres especiales."),
-
-        apellido: z
-            .string({
-                required_error: "El apellido es obligatorio.",
-                error: "El apellido es obligatorio."
-            })
-            .trim()
-            .min(2, "El apellido debe tener al menos 2 caracteres.")
-            .max(100, "El apellido no puede superar los 100 caracteres.")
-            .regex(NAME_REGEX, "El apellido no puede contener números ni caracteres especiales."),
-
-        tipoDocumento: z
-            .string({
-                required_error: "El tipo de documento es obligatorio.",
-                error: "El tipo de documento es obligatorio."
-            })
-            .trim()
-            .min(1, "El tipo de documento es obligatorio.")
-            .refine((val) => ALLOWED_DOCUMENT_TYPES.includes(normalizeTipoDocumento(val)), {
-                message: "Tipo de documento inválido. Debe ser CC, TI, CE, PPT o Pasaporte."
-            }),
-
-        documento: z
-            .string({
-                required_error: "El número de documento es obligatorio.",
-                error: "El número de documento es obligatorio."
-            })
-            .trim()
-            .min(1, "El número de documento es obligatorio."),
-
-        correo: z
-            .string({
-                required_error: "El correo es obligatorio.",
-                error: "El correo es obligatorio."
-            })
-            .trim()
-            .min(1, "El correo es obligatorio.")
-            .regex(EMAIL_REGEX, "Debe ingresar un correo válido."),
-
-        password: z
-            .string({
-                required_error: "La contraseña es obligatoria."
-            })
-            .min(6)
-            .optional(),
-
-        telefono: z
-            .string({
-                required_error: "El teléfono es obligatorio.",
-                error: "El teléfono es obligatorio."
-            })
-            .trim()
-            .min(7, "El teléfono debe tener al menos 7 dígitos.")
-            .max(15, "El teléfono no puede superar los 15 dígitos.")
-            .regex(/^[0-9+]+$/, "El teléfono solo puede contener números."),
-
-        direccion: z
-            .string({
-                required_error: "La dirección es obligatoria.",
-                error: "La dirección es obligatoria."
-            })
-            .trim()
-            .min(5, "La dirección debe tener al menos 5 caracteres.")
-            .max(200, "La dirección no puede superar los 200 caracteres."),
-
-        fechaNacimiento: z.string().trim().optional(),
-        edad: z.number().nullable().optional(),
-
-        foto: z.string().nullable().optional(),
-
-        rol: z.string().optional(),
-        rolId: z.string().optional()
-    })
+    .object(crearClienteBaseShape)
     .superRefine((data, ctx) => {
         const tipoNorm = normalizeTipoDocumento(data.tipoDocumento);
         if (tipoNorm === "TI") {
@@ -262,6 +324,85 @@ const crearClienteSchema = z
             tipoDocumento,
             documento,
             edad,
+            correo: data.correo.trim().toLowerCase()
+        };
+    });
+
+const registrarClienteSchema = z
+    .object({
+        ...crearClienteBaseShape,
+        fechaNacimiento: z
+            .string({
+                required_error: "La fecha de nacimiento es obligatoria.",
+                error: "La fecha de nacimiento es obligatoria."
+            })
+            .trim()
+            .min(1, "La fecha de nacimiento es obligatoria."),
+        password: z
+            .string({
+                required_error: "La contraseña es obligatoria.",
+                error: "La contraseña es obligatoria."
+            })
+            .min(1, "La contraseña es obligatoria."),
+        aceptaTerminos: z
+            .boolean({
+                required_error: "Debes aceptar los términos y condiciones y la política de tratamiento de datos personales.",
+                error: "Debes aceptar los términos y condiciones y la política de tratamiento de datos personales."
+            })
+            .refine((val) => val === true, {
+                message: "Debes aceptar los términos y condiciones y la política de tratamiento de datos personales."
+            })
+    })
+    .superRefine((data, ctx) => {
+        const tipoNorm = normalizeTipoDocumento(data.tipoDocumento);
+        if (tipoNorm === "TI") {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["tipoDocumento"],
+                message: "La Tarjeta de Identidad (TI) es solo para menores de edad. Los clientes deben ser mayores de edad (mínimo 18 años)."
+            });
+        }
+
+        if (ALLOWED_DOCUMENT_TYPES.includes(tipoNorm)) {
+            const docErr = validateDocumentoPorTipo(data.documento, tipoNorm);
+            if (docErr) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: ["documento"],
+                    message: docErr
+                });
+            }
+        }
+
+        const edadErr = validateMayorDeEdad(data.fechaNacimiento);
+        if (edadErr) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["fechaNacimiento"],
+                message: edadErr
+            });
+        }
+
+        const pwdErr = validateStrongPassword(data.password);
+        if (pwdErr) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["password"],
+                message: pwdErr
+            });
+        }
+    })
+    .transform((data) => {
+        const tipoDocumento = normalizeTipoDocumento(data.tipoDocumento);
+        const documento = normalizeDocumento(data.documento, tipoDocumento);
+        const edad = calcularEdadNumero(data.fechaNacimiento);
+        return {
+            ...data,
+            tipoDocumento,
+            documento,
+            edad,
+            aceptaTerminos: true,
+            fechaAceptacionTerminos: new Date(),
             correo: data.correo.trim().toLowerCase()
         };
     });
@@ -335,5 +476,6 @@ const actualizarClienteSchema = z
 
 export {
     crearClienteSchema,
+    registrarClienteSchema,
     actualizarClienteSchema
 };

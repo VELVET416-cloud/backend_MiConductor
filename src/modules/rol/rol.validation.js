@@ -38,6 +38,18 @@ const rolSchema = z.object({
 
 });
 
-export const crearRolSchema = rolSchema;
+export const crearRolSchema = rolSchema.extend({
+    permisos: z
+        .array(
+            z
+                .string()
+                .regex(
+                    objectIdRegex,
+                    "Uno o más permisos tienen un ID inválido."
+                )
+        )
+        .min(1, "Debes asignar al menos un permiso al rol.")
+        .transform(permisos => [...new Set(permisos)])
+});
 
 export const actualizarRolSchema = rolSchema.partial();

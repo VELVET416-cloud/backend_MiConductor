@@ -75,7 +75,7 @@ async function enviarPushFCM(tokens, { titulo, mensaje, tipo, data = {} }) {
 async function obtenerUsuariosAdministradores() {
     try {
         const rolAdmin = await Rol.findOne({
-            nombre: { $in: ["ADMINISTRADOR", "ADMIN"] }
+            nombre: { $in: ["SUPERADMINISTRADOR", "ADMINISTRADOR", "ADMIN"] }
         });
 
         if (!rolAdmin) {

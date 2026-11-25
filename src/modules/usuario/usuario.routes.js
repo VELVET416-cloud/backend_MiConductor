@@ -59,7 +59,9 @@ router.put(
     authMiddleware,
     (req, res, next) => {
         const esPropioPerfil = String(req.user?.id) === String(req.params.id);
-        const esAdmin = req.user?.rol === "ADMINISTRADOR";
+        const esAdmin =
+            req.user?.rol === "SUPERADMINISTRADOR" ||
+            req.user?.rol === "ADMINISTRADOR";
         const puedeEditarUsuarios = esAdmin || (req.user?.permisos || []).includes("editar.usuarios");
 
         if (esPropioPerfil && !puedeEditarUsuarios) {
