@@ -1,4 +1,5 @@
 import AppError from "../utils/AppError.js";
+import { isAdminOrSuperAdminRoleName } from "../constants/permiso.js";
 
 const permisoMiddleware = (...permisosRequeridos) => {
 
@@ -17,8 +18,8 @@ const permisoMiddleware = (...permisosRequeridos) => {
             );
         }
 
-        // El ADMINISTRADOR siempre tiene acceso irrestricto
-        if (req.user.rol === "ADMINISTRADOR") {
+        // El SUPERADMINISTRADOR y el ADMINISTRADOR siempre tienen acceso irrestricto a módulos administrativos
+        if (isAdminOrSuperAdminRoleName(req.user.rol)) {
             return next();
         }
 
