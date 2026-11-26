@@ -34,7 +34,7 @@ class AuthRepository {
                 select: "nombre codigo modulo activo",
                 match: { activo: true }
             }
-        });
+        }).lean();
 
     }
 

@@ -1,7 +1,13 @@
 import AppError from "../../utils/AppError.js";
+import {
+    normalizeTipoDocumento,
+    normalizeDocumento,
+    validateDocumentoPorTipo,
+    FIELD_LIMITS
+} from "./cliente.schema.js";
 
 const ONLY_DIGITS_REGEX = /^\d+$/;
-const LETTERS_TILDES_SPACES_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/;
+const LETTERS_TILDES_SPACES_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'-]+$/;
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 const CELULAR_COLOMBIA_REGEX = /^3\d{9}$/;
 
@@ -72,8 +78,8 @@ export function validarDireccionColombiana(direccion) {
     if (!DIRECCION_COLOMBIA_FULL_REGEX.test(trimmed)) {
         return "Formato de dirección inválido. Debe tener tipo de vía, número, cruce (# o No.) y placa (ej. Calle 30 # 20-15).";
     }
-    if (trimmed.length > 200) {
-        return "La dirección no puede superar los 200 caracteres.";
+    if (trimmed.length > FIELD_LIMITS.direccion.max) {
+        return `La dirección no puede superar los ${FIELD_LIMITS.direccion.max} caracteres.`;
     }
     return "";
 }
@@ -107,23 +113,26 @@ export function validarDatosCliente(datos, { esActualizacion = false } = {}) {
         }
     }
 
-    // 2. Documento: obligatorio, solo números, 6 a 10 dígitos (solo en creación)
+    // 2. Documento: obligatorio, validado según tipoDocumento (CC, CE, PPT, PA)
     if (!esActualizacion) {
-        const doc = (datos.documento ?? "").toString().trim();
-        if (!doc) {
-            throw new AppError("El número de documento es obligatorio.", 400);
+        const tipoNorm = normalizeTipoDocumento(datos.tipoDocumento);
+        const doc = normalizeDocumento(datos.documento, tipoNorm);
+        const docError = validateDocumentoPorTipo(doc, tipoNorm);
+        if (docError) {
+            throw new AppError(docError, 400);
         }
-        if (!ONLY_DIGITS_REGEX.test(doc)) {
-            throw new AppError("El documento solo debe contener números.", 400);
-        }
-        if (doc.length < 6 || doc.length > 10) {
-            throw new AppError("El documento debe tener entre 6 y 10 dígitos.", 400);
-        }
+        datos.tipoDocumento = tipoNorm;
         datos.documento = doc;
     }
 
-    // 3. Nombre completo: obligatorio, solo letras, tildes, ñ y espacios, mínimo 3 caracteres
+    // 3. Nombre y apellido: obligatorios, solo letras, tildes, ñ y espacios
     if (!esActualizacion || datos.nombre !== undefined || datos.apellido !== undefined || datos.nombreCompleto !== undefined) {
+        if (datos.nombre !== undefined && String(datos.nombre).trim().length > FIELD_LIMITS.nombre.max) {
+            throw new AppError(`El nombre no puede superar los ${FIELD_LIMITS.nombre.max} caracteres.`, 400);
+        }
+        if (datos.apellido !== undefined && String(datos.apellido).trim().length > FIELD_LIMITS.apellido.max) {
+            throw new AppError(`El apellido no puede superar los ${FIELD_LIMITS.apellido.max} caracteres.`, 400);
+        }
         const nombreCompleto = (
             datos.nombreCompleto ||
             `${datos.nombre || ""} ${datos.apellido || ""}`
@@ -142,11 +151,14 @@ export function validarDatosCliente(datos, { esActualizacion = false } = {}) {
         }
     }
 
-    // 4. Correo: obligatorio, formato válido
+    // 4. Correo: obligatorio, formato válido y límite máximo
     if (!esActualizacion || datos.correo !== undefined) {
         const correo = (datos.correo ?? "").toString().trim().toLowerCase();
         if (!correo) {
             throw new AppError("El correo electrónico es obligatorio.", 400);
+        }
+        if (correo.length > FIELD_LIMITS.correo.max) {
+            throw new AppError(`El correo electrónico no puede superar los ${FIELD_LIMITS.correo.max} caracteres.`, 400);
         }
         if (!EMAIL_REGEX.test(correo)) {
             throw new AppError("El correo electrónico no tiene un formato válido.", 400);

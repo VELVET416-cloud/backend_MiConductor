@@ -23,9 +23,21 @@ class ClienteService {
     // CREAR CLIENTE
     // ======================================================
 
-    async crear(datos) {
+    async crear(datos, { autoRegistro = false } = {}) {
         validarDatosCliente(datos, { esActualizacion: false });
         datos.direccion = datos.direccion.trim();
+
+        if (autoRegistro) {
+            if (datos.aceptaTerminos !== true) {
+                throw new AppError(
+                    "Debes aceptar los términos y condiciones y la política de tratamiento de datos personales.",
+                    400
+                );
+            }
+            if (!datos.password || typeof datos.password !== "string") {
+                throw new AppError("La contraseña es obligatoria.", 400);
+            }
+        }
 
         // Validar que el documento y correo no estén repetidos consultando los datos existentes
         const docExistente = await UsuarioRepository.obtenerPorDocumento(datos.documento);
@@ -55,9 +67,14 @@ class ClienteService {
             rolClienteId = rolCliente._id;
         }
 
-        // No enviamos password fijo para que UsuarioHelper genere activationToken
-        // y el cliente pueda crear su propia contraseña desde el correo de activación.
-        const usuario = await UsuarioHelper.crear({
+        const aceptaTerminos = Boolean(datos.aceptaTerminos);
+        const fechaAceptacionTerminos = aceptaTerminos
+            ? (datos.fechaAceptacionTerminos ? new Date(datos.fechaAceptacionTerminos) : new Date())
+            : null;
+
+        // Si es auto-registro (web o móvil), se envía la contraseña del usuario para hashearla con bcrypt.
+        // Si es creación por administrador, no enviamos password para que UsuarioHelper genere activationToken.
+        const payloadUsuario = {
             nombre: datos.nombre,
             apellido: datos.apellido,
             nombreCompleto: datos.nombreCompleto || `${datos.nombre || ""} ${datos.apellido || ""}`.trim(),
@@ -68,8 +85,16 @@ class ClienteService {
             foto: datos.foto || null,
             fechaNacimiento: datos.fechaNacimiento || null,
             edad: datos.edad || null,
+            aceptaTerminos,
+            fechaAceptacionTerminos,
             rol: rolClienteId
-        });
+        };
+
+        if (autoRegistro && datos.password) {
+            payloadUsuario.password = datos.password;
+        }
+
+        const usuario = await UsuarioHelper.crear(payloadUsuario);
 
         try {
             // Crear registro de Cliente con referencia al usuario creado
@@ -78,57 +103,61 @@ class ClienteService {
                 direccion: datos.direccion,
                 foto: datos.foto || null,
                 fechaNacimiento: datos.fechaNacimiento || null,
-                edad: datos.edad || null
+                edad: datos.edad || null,
+                aceptaTerminos,
+                fechaAceptacionTerminos
             });
 
-            // Recargar variables de entorno de correo por si el servidor inició antes de actualizar .env
-            dotenv.config({ override: true });
-            if (process.env.MAIL_USER) env.MAIL_USER = process.env.MAIL_USER;
-            if (process.env.MAIL_PASSWORD) env.MAIL_PASSWORD = process.env.MAIL_PASSWORD;
-            if (process.env.MAIL_HOST) env.MAIL_HOST = process.env.MAIL_HOST;
-            if (process.env.MAIL_PORT) env.MAIL_PORT = process.env.MAIL_PORT;
-            if (process.env.CLIENT_URL) env.CLIENT_URL = process.env.CLIENT_URL;
+            // Solo enviar correo de activación cuando el cliente es creado por un administrador (sin contraseña propia)
+            if (!autoRegistro) {
+                // Recargar variables de entorno de correo por si el servidor inició antes de actualizar .env
+                dotenv.config({ override: true });
+                if (process.env.MAIL_USER) env.MAIL_USER = process.env.MAIL_USER;
+                if (process.env.MAIL_PASSWORD) env.MAIL_PASSWORD = process.env.MAIL_PASSWORD;
+                if (process.env.MAIL_HOST) env.MAIL_HOST = process.env.MAIL_HOST;
+                if (process.env.MAIL_PORT) env.MAIL_PORT = process.env.MAIL_PORT;
+                if (process.env.CLIENT_URL) env.CLIENT_URL = process.env.CLIENT_URL;
 
-            // Apuntar el enlace de activación del cliente a /api/clientes/activar-cuenta
-            // para que funcione directamente en el navegador aunque el Administrador tenga sesión abierta.
-            const port = process.env.PORT || env.PORT || 3000;
-            const baseUrlActivacion = `http://localhost:${port}/api/clientes`;
+                // Apuntar el enlace de activación del cliente a /api/clientes/activar-cuenta
+                // para que funcione directamente en el navegador aunque el Administrador tenga sesión abierta.
+                const port = process.env.PORT || env.PORT || 3000;
+                const baseUrlActivacion = `http://localhost:${port}/api/clientes`;
 
-            // Generar un token JWT firmado con expiración estricta de 10 minutos (claim "exp")
-            // y de un solo uso vinculado a activationToken y activationTokenExpires (10 minutos) en base de datos
-            const diezMinutosMs = 10 * 60 * 1000;
-            const expiracion10Min = new Date(Date.now() + diezMinutosMs);
-            const secret = process.env.JWT_SECRET || env.JWT_SECRET || "mi_conductor_secret";
+                // Generar un token JWT firmado con expiración estricta de 10 minutos (claim "exp")
+                // y de un solo uso vinculado a activationToken y activationTokenExpires (10 minutos) en base de datos
+                const diezMinutosMs = 10 * 60 * 1000;
+                const expiracion10Min = new Date(Date.now() + diezMinutosMs);
+                const secret = process.env.JWT_SECRET || env.JWT_SECRET || "mi_conductor_secret";
 
-            const signedActivationToken = jwt.sign(
-                {
-                    uid: usuario._id.toString(),
-                    purpose: "client_activation"
-                },
-                secret,
-                { expiresIn: "10m" }
-            );
+                const signedActivationToken = jwt.sign(
+                    {
+                        uid: usuario._id.toString(),
+                        purpose: "client_activation"
+                    },
+                    secret,
+                    { expiresIn: "10m" }
+                );
 
-            await ClienteRepository.configurarTokenActivacionCliente(
-                usuario._id,
-                signedActivationToken,
-                expiracion10Min
-            );
+                await ClienteRepository.configurarTokenActivacionCliente(
+                    usuario._id,
+                    signedActivationToken,
+                    expiracion10Min
+                );
 
-            // Enviar correo de activación al cliente indicando que el enlace vence en 10 minutos
-            try {
+                // Enviar correo de activación en segundo plano para no bloquear la respuesta HTTP
+                // indicando que el enlace vence en 10 minutos
                 const nombreParaCorreo =
                     `${usuario.nombre || ""} ${usuario.apellido || ""}`.trim() ||
                     datos.nombreCompleto ||
                     "Cliente";
 
-                await this.enviarCorreoActivacionCliente10Min(
+                this.enviarCorreoActivacionCliente10Min(
                     usuario.correo,
                     nombreParaCorreo,
                     `${baseUrlActivacion}/activar-cuenta?token=${encodeURIComponent(signedActivationToken)}`
-                );
-            } catch (mailErr) {
-                console.error("[ClienteService] Error enviando correo de activación:", mailErr.message);
+                ).catch((mailErr) => {
+                    console.error("[ClienteService] Error enviando correo de activación:", mailErr.message);
+                });
             }
 
             const clienteCompleto = await ClienteRepository.obtenerPorId(cliente._id);
@@ -388,15 +417,20 @@ class ClienteService {
     // VERIFICAR DOCUMENTO / CÉDULA
     // ======================================================
 
-    async verificarDocumento(documento) {
+    // excluirUsuarioId: usuario en edición, para no reportarse a sí mismo como duplicado
+    async verificarDocumento(documento, excluirUsuarioId = null) {
         if (!documento || !documento.trim()) {
             throw new AppError("El documento es obligatorio para realizar la verificación.", 400);
+        }
+
+        if (excluirUsuarioId && !mongoose.Types.ObjectId.isValid(excluirUsuarioId)) {
+            throw new AppError("El id del usuario a excluir no es válido.", 400);
         }
 
         const doc = documento.trim();
         const usuarioExistente = await UsuarioRepository.obtenerPorDocumento(doc);
 
-        if (usuarioExistente) {
+        if (usuarioExistente && usuarioExistente._id.toString() !== String(excluirUsuarioId || "")) {
             return {
                 disponible: false,
                 existe: true,
@@ -414,6 +448,44 @@ class ClienteService {
             disponible: true,
             existe: false,
             mensaje: "El documento está disponible para registro."
+        };
+    }
+
+    // ======================================================
+    // VERIFICAR CORREO
+    // ======================================================
+
+    // El correo es único en toda la colección de usuarios (clientes, conductores, administradores)
+    async verificarCorreo(correo, excluirUsuarioId = null) {
+        const correoLimpio = (correo || "").toString().trim().toLowerCase();
+
+        if (!correoLimpio) {
+            throw new AppError("El correo es obligatorio para realizar la verificación.", 400);
+        }
+
+        if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(correoLimpio)) {
+            throw new AppError("El correo electrónico no tiene un formato válido.", 400);
+        }
+
+        if (excluirUsuarioId && !mongoose.Types.ObjectId.isValid(excluirUsuarioId)) {
+            throw new AppError("El id del usuario a excluir no es válido.", 400);
+        }
+
+        const usuarioExistente = await UsuarioRepository.obtenerPorCorreo(correoLimpio);
+
+        if (usuarioExistente && usuarioExistente._id.toString() !== String(excluirUsuarioId || "")) {
+            return {
+                disponible: false,
+                existe: true,
+                mensaje: "El correo electrónico ya se encuentra registrado.",
+                usuario: { _id: usuarioExistente._id }
+            };
+        }
+
+        return {
+            disponible: true,
+            existe: false,
+            mensaje: "El correo electrónico está disponible para registro."
         };
     }
 

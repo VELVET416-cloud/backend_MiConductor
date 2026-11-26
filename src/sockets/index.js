@@ -16,7 +16,7 @@ export const registerSocketEvents = (io) => {
 
             // Unir a salas por rol
             const rol = (socket.user.rol || "").toUpperCase();
-            if (rol === "ADMINISTRADOR" || rol === "ADMIN") {
+            if (rol === "SUPERADMINISTRADOR" || rol === "ADMINISTRADOR" || rol === "ADMIN") {
                 socket.join("rol:ADMINISTRADOR");
                 socket.join("sala:administradores");
             } else if (rol === "CONDUCTOR") {

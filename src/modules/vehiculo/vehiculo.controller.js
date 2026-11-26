@@ -127,7 +127,23 @@ class VehiculoController {
     async verificarPlaca(req, res, next) {
         try {
             const { placa } = req.params;
-            const resultado = await VehiculoService.verificarPlaca(placa);
+            const resultado = await VehiculoService.verificarPlaca(placa, req.query.excluirId || null);
+
+            return successResponse(
+                res,
+                resultado,
+                resultado.mensaje
+            );
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    // Verificar disponibilidad de número de chasis
+    async verificarChasis(req, res, next) {
+        try {
+            const { chasis } = req.params;
+            const resultado = await VehiculoService.verificarChasis(chasis, req.query.excluirId || null);
 
             return successResponse(
                 res,

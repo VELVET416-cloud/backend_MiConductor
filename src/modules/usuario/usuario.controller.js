@@ -7,7 +7,7 @@ class UsuarioController {
     async crear(req, res, next) {
         try {
 
-            const usuario = await UsuarioService.crear(req.body);
+            const usuario = await UsuarioService.crear(req.body, req.user);
 
             return successResponse(
                 res,
@@ -83,7 +83,8 @@ class UsuarioController {
 
             const usuario = await UsuarioService.actualizar(
                 id,
-                req.body
+                req.body,
+                req.user
             );
 
             return successResponse(
