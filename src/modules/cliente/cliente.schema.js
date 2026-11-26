@@ -260,13 +260,11 @@ const crearClienteBaseShape = {
         .regex(CELULAR_COLOMBIA_REGEX, "El teléfono debe ser un celular colombiano de 10 dígitos que empiece por 3."),
 
     direccion: z
-        .string({
-            required_error: "La dirección es obligatoria.",
-            error: "La dirección es obligatoria."
-        })
+        .string()
         .trim()
-        .min(FIELD_LIMITS.direccion.min, `La dirección debe tener al menos ${FIELD_LIMITS.direccion.min} caracteres.`)
-        .max(FIELD_LIMITS.direccion.max, `La dirección no puede superar los ${FIELD_LIMITS.direccion.max} caracteres.`),
+        .max(FIELD_LIMITS.direccion.max, `La dirección no puede superar los ${FIELD_LIMITS.direccion.max} caracteres.`)
+        .optional()
+        .or(z.literal("")),
 
     fechaNacimiento: z.string().trim().optional(),
     edad: z.number().nullable().optional(),
@@ -412,9 +410,9 @@ const actualizarClienteSchema = z
         direccion: z
             .string()
             .trim()
-            .min(5, "La dirección debe tener al menos 5 caracteres.")
             .max(200)
-            .optional(),
+            .optional()
+            .or(z.literal("")),
 
         foto: z.string().nullable().optional(),
 
