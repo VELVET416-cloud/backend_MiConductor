@@ -150,7 +150,25 @@ class ClienteController {
     async verificarDocumento(req, res, next) {
         try {
             const { documento } = req.params;
-            const resultado = await ClienteService.verificarDocumento(documento);
+            const resultado = await ClienteService.verificarDocumento(documento, req.query.excluirId || null);
+
+            return successResponse(
+                res,
+                resultado,
+                resultado.mensaje
+            );
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    /**
+     * Verifica si un correo ya está registrado (opcionalmente excluyendo un usuario).
+     */
+    async verificarCorreo(req, res, next) {
+        try {
+            const { correo } = req.params;
+            const resultado = await ClienteService.verificarCorreo(correo, req.query.excluirId || null);
 
             return successResponse(
                 res,

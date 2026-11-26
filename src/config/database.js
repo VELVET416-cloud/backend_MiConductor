@@ -5,7 +5,8 @@ export const connectDB = async () => {
   try {
     console.log("=====================================");
     console.log("Intentando conectar a MongoDB...");
-    console.log("MONGO_URI:", env.MONGO_URI);
+    // Nunca imprimir la URI completa: incluye usuario y contraseña
+    console.log("MONGO_URI:", (env.MONGO_URI || "").replace(/\/\/([^@/]+)@/, "//***:***@"));
     console.log("=====================================");
 
     await mongoose.connect(env.MONGO_URI, {

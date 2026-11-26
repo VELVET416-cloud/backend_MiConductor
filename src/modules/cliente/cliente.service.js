@@ -417,15 +417,20 @@ class ClienteService {
     // VERIFICAR DOCUMENTO / CÉDULA
     // ======================================================
 
-    async verificarDocumento(documento) {
+    // excluirUsuarioId: usuario en edición, para no reportarse a sí mismo como duplicado
+    async verificarDocumento(documento, excluirUsuarioId = null) {
         if (!documento || !documento.trim()) {
             throw new AppError("El documento es obligatorio para realizar la verificación.", 400);
+        }
+
+        if (excluirUsuarioId && !mongoose.Types.ObjectId.isValid(excluirUsuarioId)) {
+            throw new AppError("El id del usuario a excluir no es válido.", 400);
         }
 
         const doc = documento.trim();
         const usuarioExistente = await UsuarioRepository.obtenerPorDocumento(doc);
 
-        if (usuarioExistente) {
+        if (usuarioExistente && usuarioExistente._id.toString() !== String(excluirUsuarioId || "")) {
             return {
                 disponible: false,
                 existe: true,
@@ -443,6 +448,44 @@ class ClienteService {
             disponible: true,
             existe: false,
             mensaje: "El documento está disponible para registro."
+        };
+    }
+
+    // ======================================================
+    // VERIFICAR CORREO
+    // ======================================================
+
+    // El correo es único en toda la colección de usuarios (clientes, conductores, administradores)
+    async verificarCorreo(correo, excluirUsuarioId = null) {
+        const correoLimpio = (correo || "").toString().trim().toLowerCase();
+
+        if (!correoLimpio) {
+            throw new AppError("El correo es obligatorio para realizar la verificación.", 400);
+        }
+
+        if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(correoLimpio)) {
+            throw new AppError("El correo electrónico no tiene un formato válido.", 400);
+        }
+
+        if (excluirUsuarioId && !mongoose.Types.ObjectId.isValid(excluirUsuarioId)) {
+            throw new AppError("El id del usuario a excluir no es válido.", 400);
+        }
+
+        const usuarioExistente = await UsuarioRepository.obtenerPorCorreo(correoLimpio);
+
+        if (usuarioExistente && usuarioExistente._id.toString() !== String(excluirUsuarioId || "")) {
+            return {
+                disponible: false,
+                existe: true,
+                mensaje: "El correo electrónico ya se encuentra registrado.",
+                usuario: { _id: usuarioExistente._id }
+            };
+        }
+
+        return {
+            disponible: true,
+            existe: false,
+            mensaje: "El correo electrónico está disponible para registro."
         };
     }
 
