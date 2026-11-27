@@ -1,3 +1,8 @@
+import jwt from "jsonwebtoken";
+import { env } from "../../config/env.js";
+import ClienteRepository from "../cliente/cliente.repository.js";
+import RolRepository from "../rol/rol.repository.js";
+import { clearAuthUserCache } from "../../middlewares/auth.middleware.js";
 import mongoose from "mongoose";
 import ConductorRepository from "./conductor.repository.js";
 import UsuarioRepository from "../usuario/usuario.repository.js";
@@ -7,95 +12,90 @@ import AppError from "../../utils/AppError.js";
 
 const CATEGORIAS_VALIDAS_COLOMBIA = ["A1", "A2", "B1", "B2", "B3", "C1", "C2", "C3"];
 
-class ConductorService {
-    async crear(datos) {
-        // 1. Procesar licencias múltiples (si se envía array licencias, o campos individuales)
-        let licenciasProcesadas = [];
-        if (Array.isArray(datos.licencias) && datos.licencias.length > 0) {
-            const numerosVistos = new Set();
-            for (let i = 0; i < datos.licencias.length; i++) {
-                const item = datos.licencias[i];
-                const num = (item.numero || item.licencia || "").toString().trim().toUpperCase();
-                if (!num) continue;
-                if (numerosVistos.has(num)) {
-                    throw new AppError(`La licencia #${i + 1} (${num}) está repetida. Cada licencia debe tener un número único.`, 400);
-                }
-                numerosVistos.add(num);
+function procesarCategoriasDetalle(item, fallbackExp, fallbackVenc) {
+    let detalle = [];
 
-                // Comprobar si ya existe en la base de datos
-                const existeEnDb = await ConductorRepository.obtenerPorLicencia(num);
-                if (existeEnDb) {
-                    throw new AppError(`La licencia '${num}' ya se encuentra registrada en el sistema para otro conductor.`, 409);
-                }
+    if (Array.isArray(item?.categoriasDetalle) && item.categoriasDetalle.length > 0) {
+        const vistas = new Set();
+        for (const entry of item.categoriasDetalle) {
+            const cat = (entry?.categoria || "").toString().trim().toUpperCase();
+            if (!cat) continue;
+            if (!CATEGORIAS_VALIDAS_COLOMBIA.includes(cat)) {
+                throw new AppError(`La categoría de licencia '${cat}' no es válida en Colombia.`, 400);
+            }
+            if (vistas.has(cat)) {
+                throw new AppError(`La categoría '${cat}' está repetida en la licencia.`, 400);
+            }
+            vistas.add(cat);
 
-                // Categorías de esta licencia
-                let cats = [];
-                if (Array.isArray(item.categorias) && item.categorias.length > 0) cats = item.categorias;
-                else if (Array.isArray(item.categoriasLicencia) && item.categoriasLicencia.length > 0) cats = item.categoriasLicencia;
-                else if (item.categoria) cats = [item.categoria];
-                cats = [...new Set(cats.map((c) => (c || "").toString().trim().toUpperCase()))].filter(Boolean);
-
-                for (const cat of cats) {
-                    if (!CATEGORIAS_VALIDAS_COLOMBIA.includes(cat)) {
-                        throw new AppError(`La categoría de licencia '${cat}' en la licencia #${i + 1} no es válida en Colombia.`, 400);
-                    }
-                }
-
-                if (cats.length === 0) cats = ["B1"];
-
-                if (item.fechaExpedicion && item.fechaVencimiento) {
-                    const exp = new Date(item.fechaExpedicion);
-                    const venc = new Date(item.fechaVencimiento);
-                    if (venc <= exp) {
-                        throw new AppError(`En la licencia #${i + 1} (${num}), la fecha de vencimiento debe ser posterior a la fecha de expedición.`, 400);
-                    }
-                }
-
-                licenciasProcesadas.push({
-                    numero: num,
-                    categoria: cats[0] || "B1",
-                    categorias: cats,
-                    fechaExpedicion: item.fechaExpedicion ? new Date(item.fechaExpedicion) : null,
-                    fechaVencimiento: item.fechaVencimiento ? new Date(item.fechaVencimiento) : null,
-                    lugarExpedicion: (item.lugarExpedicion || "").toString().trim(),
-                    fotoLicencia: item.fotoLicencia || null
-                });
+            const exp = entry.fechaExpedicion ? new Date(entry.fechaExpedicion) : null;
+            const venc = entry.fechaVencimiento ? new Date(entry.fechaVencimiento) : null;
+            if (exp && venc && venc <= exp) {
+                throw new AppError(`En la categoría '${cat}', la fecha de vencimiento debe ser posterior a la de expedición.`, 400);
+            }
+            detalle.push({ categoria: cat, fechaExpedicion: exp, fechaVencimiento: venc });
+        }
+    } else {
+        let cats = [];
+        if (Array.isArray(item?.categorias) && item.categorias.length > 0) cats = item.categorias;
+        else if (Array.isArray(item?.categoriasLicencia) && item.categoriasLicencia.length > 0) cats = item.categoriasLicencia;
+        else if (item?.categoria) cats = [item.categoria];
+        cats = [...new Set(cats.map((c) => (c || "").toString().trim().toUpperCase()))].filter(Boolean);
+        for (const cat of cats) {
+            if (!CATEGORIAS_VALIDAS_COLOMBIA.includes(cat)) {
+                throw new AppError(`La categoría de licencia '${cat}' no es válida en Colombia.`, 400);
             }
         }
+        if (cats.length === 0) cats = ["B1"];
+        const exp = fallbackExp ? new Date(fallbackExp) : null;
+        const venc = fallbackVenc ? new Date(fallbackVenc) : null;
+        detalle = cats.map((cat) => ({ categoria: cat, fechaExpedicion: exp, fechaVencimiento: venc }));
+    }
 
-        // Si no se pasaron licencias múltiples, tomar campos directos
-        let licenciaPrincipal = datos.licencia?.trim()?.toUpperCase();
-        if (!licenciaPrincipal && licenciasProcesadas.length > 0) {
-            licenciaPrincipal = licenciasProcesadas[0].numero;
+    if (detalle.length === 0) {
+        detalle = [{
+            categoria: "B1",
+            fechaExpedicion: fallbackExp ? new Date(fallbackExp) : null,
+            fechaVencimiento: fallbackVenc ? new Date(fallbackVenc) : null
+        }];
+    }
+
+    return detalle;
+}
+
+class ConductorService {
+    async crear(datos) {
+        // 1. Procesar licencia única (un conductor solo puede tener una licencia de conducción)
+        if (Array.isArray(datos.licencias) && datos.licencias.length > 1) {
+            throw new AppError("Un conductor solo puede tener una licencia de conducción registrada.", 400);
         }
+
+        const licItem = Array.isArray(datos.licencias) && datos.licencias.length > 0 ? datos.licencias[0] : null;
+        const licenciaPrincipal = (licItem?.numero || licItem?.licencia || datos.licencia || "").toString().trim().toUpperCase();
 
         if (!licenciaPrincipal) {
-            throw new AppError("Debes registrar al menos una licencia de conducción.", 400);
+            throw new AppError("Debes registrar una licencia de conducción.", 400);
         }
 
-        // Validar si la licencia principal existe
         const licenciaExiste = await ConductorRepository.obtenerPorLicencia(licenciaPrincipal);
         if (licenciaExiste) {
             throw new AppError(`La licencia '${licenciaPrincipal}' ya se encuentra registrada en el sistema.`, 409);
         }
 
-        // Categorías generales
-        let categoriasList = [];
-        if (Array.isArray(datos.categoriasLicencia) && datos.categoriasLicencia.length > 0) {
-            categoriasList = datos.categoriasLicencia;
-        } else if (licenciasProcesadas.length > 0) {
-            categoriasList = licenciasProcesadas[0].categorias;
-        } else if (datos.categoriaLicencia) {
-            categoriasList = [datos.categoriaLicencia];
-        }
+        const categoriasDetalle = procesarCategoriasDetalle(
+            {
+                categoriasDetalle: licItem?.categoriasDetalle || datos.categoriasDetalle,
+                categorias: licItem?.categorias || datos.categoriasLicencia,
+                categoria: licItem?.categoria || datos.categoriaLicencia
+            },
+            licItem?.fechaExpedicion || datos.fechaExpedicion,
+            licItem?.fechaVencimiento || datos.fechaVencimiento
+        );
 
-        categoriasList = [...new Set(categoriasList.map((c) => (c || "").toString().trim().toUpperCase()))].filter(Boolean);
-        if (categoriasList.length === 0) categoriasList = ["B1"];
-
+        const categoriasList = categoriasDetalle.map((c) => c.categoria);
         const categoriaPrincipal = categoriasList[0];
-
-        const fechaExpedicionPrincipal = datos.fechaExpedicion || licenciasProcesadas[0]?.fechaExpedicion;
-        const fechaVencimientoPrincipal = datos.fechaVencimiento || licenciasProcesadas[0]?.fechaVencimiento;
+        const fechaExpedicionPrincipal = categoriasDetalle[0]?.fechaExpedicion || (datos.fechaExpedicion ? new Date(datos.fechaExpedicion) : null);
+        const fechaVencimientoPrincipal = categoriasDetalle[0]?.fechaVencimiento || (datos.fechaVencimiento ? new Date(datos.fechaVencimiento) : null);
 
         if (!fechaExpedicionPrincipal || !fechaVencimientoPrincipal) {
             throw new AppError("Las fechas de expedición y vencimiento de la licencia son obligatorias.", 400);
@@ -105,18 +105,24 @@ class ConductorService {
             throw new AppError("La fecha de vencimiento debe ser posterior a la fecha de expedición de la licencia.", 400);
         }
 
-        // Asegurar que licenciasProcesadas tenga al menos la licencia principal
-        if (licenciasProcesadas.length === 0) {
-            licenciasProcesadas.push({
+        const fotoFrontal = licItem?.fotoLicenciaFrontal || datos.fotoLicenciaFrontal || licItem?.fotoLicencia || datos.fotoLicencia || null;
+        const fotoTrasera = licItem?.fotoLicenciaTrasera || datos.fotoLicenciaTrasera || null;
+        const lugarExpedicion = (licItem?.lugarExpedicion || datos.lugarExpedicion || "").toString().trim();
+
+        const licenciasProcesadas = [
+            {
                 numero: licenciaPrincipal,
                 categoria: categoriaPrincipal,
                 categorias: categoriasList,
+                categoriasDetalle,
                 fechaExpedicion: fechaExpedicionPrincipal,
                 fechaVencimiento: fechaVencimientoPrincipal,
-                lugarExpedicion: (datos.lugarExpedicion || "").toString().trim(),
-                fotoLicencia: datos.fotoLicencia || null
-            });
-        }
+                lugarExpedicion,
+                fotoLicencia: fotoFrontal,
+                fotoLicenciaFrontal: fotoFrontal,
+                fotoLicenciaTrasera: fotoTrasera
+            }
+        ];
 
         // 2. Verificación anticipada de identidad (Usuario existente vs Nuevo Usuario)
         const docNormalizado = (datos.documento || "").toString().trim();
@@ -180,6 +186,8 @@ class ConductorService {
                 licencia: licenciaPrincipal,
                 categoriaLicencia: categoriaPrincipal,
                 categoriasLicencia: categoriasList,
+                categoriasDetalle,
+                lugarExpedicion,
                 fechaExpedicion: fechaExpedicionPrincipal,
                 fechaVencimiento: fechaVencimientoPrincipal,
                 licencias: licenciasProcesadas,
@@ -187,7 +195,9 @@ class ConductorService {
                 disponible: false,
                 estadoConductor: "ACTIVO",
                 estado: true,
-                fotoLicencia: datos.fotoLicencia || licenciasProcesadas[0]?.fotoLicencia || null,
+                fotoLicencia: fotoFrontal,
+                fotoLicenciaFrontal: fotoFrontal,
+                fotoLicenciaTrasera: fotoTrasera,
                 fotoPerfil: datos.fotoPerfil || null
             });
 
@@ -243,58 +253,58 @@ class ConductorService {
 
         const datosConductor = {};
 
-        // 2. Procesar licencias múltiples en actualización
+        // 2. Procesar licencia única en actualización
         if (Array.isArray(datos.licencias) && datos.licencias.length > 0) {
-            const licenciasProcesadas = [];
-            const numerosVistos = new Set();
+            if (datos.licencias.length > 1) {
+                throw new AppError("Un conductor solo puede tener una licencia de conducción registrada.", 400);
+            }
 
-            for (let i = 0; i < datos.licencias.length; i++) {
-                const item = datos.licencias[i];
-                const num = (item.numero || item.licencia || "").toString().trim().toUpperCase();
-                if (!num) continue;
-                if (numerosVistos.has(num)) {
-                    throw new AppError(`La licencia #${i + 1} (${num}) está duplicada.`, 400);
-                }
-                numerosVistos.add(num);
-
-                // Comprobar si pertenece a otro conductor
+            const item = datos.licencias[0];
+            const num = (item.numero || item.licencia || "").toString().trim().toUpperCase();
+            if (num) {
                 const existeEnDb = await ConductorRepository.obtenerPorLicencia(num);
                 if (existeEnDb && existeEnDb._id.toString() !== id.toString()) {
                     throw new AppError(`La licencia '${num}' ya se encuentra registrada para otro conductor.`, 409);
                 }
 
-                let cats = [];
-                if (Array.isArray(item.categorias) && item.categorias.length > 0) cats = item.categorias;
-                else if (Array.isArray(item.categoriasLicencia) && item.categoriasLicencia.length > 0) cats = item.categoriasLicencia;
-                else if (item.categoria) cats = [item.categoria];
-                cats = [...new Set(cats.map((c) => (c || "").toString().trim().toUpperCase()))].filter(Boolean);
-                if (cats.length === 0) cats = ["B1"];
+                const categoriasDetalle = procesarCategoriasDetalle(
+                    item,
+                    item.fechaExpedicion || datos.fechaExpedicion,
+                    item.fechaVencimiento || datos.fechaVencimiento
+                );
+                const cats = categoriasDetalle.map((c) => c.categoria);
+                const fotoFrontal = item.fotoLicenciaFrontal !== undefined
+                    ? item.fotoLicenciaFrontal
+                    : (item.fotoLicencia !== undefined ? item.fotoLicencia : conductor.fotoLicenciaFrontal || conductor.fotoLicencia || null);
+                const fotoTrasera = item.fotoLicenciaTrasera !== undefined
+                    ? item.fotoLicenciaTrasera
+                    : (conductor.fotoLicenciaTrasera || null);
+                const lugarExp = (item.lugarExpedicion || datos.lugarExpedicion || "").toString().trim();
 
-                if (item.fechaExpedicion && item.fechaVencimiento) {
-                    if (new Date(item.fechaVencimiento) <= new Date(item.fechaExpedicion)) {
-                        throw new AppError(`En la licencia #${i + 1} (${num}), la fecha de vencimiento debe ser posterior a la de expedición.`, 400);
-                    }
-                }
-
-                licenciasProcesadas.push({
+                const licProcesada = {
                     numero: num,
                     categoria: cats[0] || "B1",
                     categorias: cats,
-                    fechaExpedicion: item.fechaExpedicion ? new Date(item.fechaExpedicion) : null,
-                    fechaVencimiento: item.fechaVencimiento ? new Date(item.fechaVencimiento) : null,
-                    lugarExpedicion: (item.lugarExpedicion || "").toString().trim(),
-                    fotoLicencia: item.fotoLicencia || null
-                });
-            }
+                    categoriasDetalle,
+                    fechaExpedicion: categoriasDetalle[0]?.fechaExpedicion || (item.fechaExpedicion ? new Date(item.fechaExpedicion) : null),
+                    fechaVencimiento: categoriasDetalle[0]?.fechaVencimiento || (item.fechaVencimiento ? new Date(item.fechaVencimiento) : null),
+                    lugarExpedicion: lugarExp,
+                    fotoLicencia: fotoFrontal,
+                    fotoLicenciaFrontal: fotoFrontal,
+                    fotoLicenciaTrasera: fotoTrasera
+                };
 
-            if (licenciasProcesadas.length > 0) {
-                datosConductor.licencias = licenciasProcesadas;
-                datosConductor.licencia = licenciasProcesadas[0].numero;
-                datosConductor.categoriaLicencia = licenciasProcesadas[0].categoria;
-                datosConductor.categoriasLicencia = licenciasProcesadas[0].categorias;
-                if (licenciasProcesadas[0].fechaExpedicion) datosConductor.fechaExpedicion = licenciasProcesadas[0].fechaExpedicion;
-                if (licenciasProcesadas[0].fechaVencimiento) datosConductor.fechaVencimiento = licenciasProcesadas[0].fechaVencimiento;
-                if (licenciasProcesadas[0].fotoLicencia) datosConductor.fotoLicencia = licenciasProcesadas[0].fotoLicencia;
+                datosConductor.licencias = [licProcesada];
+                datosConductor.licencia = licProcesada.numero;
+                datosConductor.categoriaLicencia = licProcesada.categoria;
+                datosConductor.categoriasLicencia = licProcesada.categorias;
+                datosConductor.categoriasDetalle = licProcesada.categoriasDetalle;
+                datosConductor.lugarExpedicion = lugarExp;
+                if (licProcesada.fechaExpedicion) datosConductor.fechaExpedicion = licProcesada.fechaExpedicion;
+                if (licProcesada.fechaVencimiento) datosConductor.fechaVencimiento = licProcesada.fechaVencimiento;
+                datosConductor.fotoLicencia = fotoFrontal;
+                datosConductor.fotoLicenciaFrontal = fotoFrontal;
+                datosConductor.fotoLicenciaTrasera = fotoTrasera;
             }
         } else if (datos.licencia !== undefined) {
             const nuevaLicencia = datos.licencia.trim().toUpperCase();
@@ -325,6 +335,11 @@ class ConductorService {
         // Experiencia en datos personales
         if (datos.experiencia !== undefined) datosConductor.experiencia = Number(datos.experiencia);
         if (datos.fotoLicencia !== undefined) datosConductor.fotoLicencia = datos.fotoLicencia;
+        if (datos.fotoLicenciaFrontal !== undefined) {
+            datosConductor.fotoLicenciaFrontal = datos.fotoLicenciaFrontal;
+            datosConductor.fotoLicencia = datos.fotoLicenciaFrontal;
+        }
+        if (datos.fotoLicenciaTrasera !== undefined) datosConductor.fotoLicenciaTrasera = datos.fotoLicenciaTrasera;
         if (datos.fotoPerfil !== undefined) datosConductor.fotoPerfil = datos.fotoPerfil;
 
         // Validar coherencia de fechas si ambas están disponibles
@@ -462,6 +477,104 @@ class ConductorService {
         }
 
         return true;
+    }
+
+    async convertirACliente(conductorId, authUser) {
+        const conductor = await ConductorRepository.obtenerPorId(conductorId);
+        if (!conductor) {
+            throw new AppError("Conductor no encontrado.", 404);
+        }
+
+        const conductorUsuarioId = conductor.usuario?._id ? conductor.usuario._id.toString() : conductor.usuario?.toString();
+        const authUserId = authUser.id ? authUser.id.toString() : authUser._id?.toString();
+
+        if (conductorUsuarioId !== authUserId && !authUser.esSuperAdmin && authUser.rol !== "ADMINISTRADOR") {
+            throw new AppError("No tienes permiso para convertir esta cuenta.", 403);
+        }
+
+        // Validar si tiene servicios activos en proceso
+        try {
+            const Solicitud = mongoose.models.Solicitud || mongoose.model("Solicitud");
+            const solicitudActiva = await Solicitud.findOne({
+                conductorAsignado: conductor._id,
+                estado: { $in: ["ACEPTADA", "EN_CAMINO", "LLEGADA_CONFIRMADA", "INICIADO", "EN_PROCESO"] }
+            });
+            if (solicitudActiva) {
+                throw new AppError("No puedes cambiar a cliente mientras tengas un viaje o servicio en curso.", 400);
+            }
+        } catch (err) {
+            if (err instanceof AppError) throw err;
+        }
+
+        // 1. Desactivar conductor
+        await ConductorRepository.actualizar(conductor._id, {
+            disponible: false,
+            estadoConductor: "INACTIVO",
+            estado: false,
+            fechaCambioEstado: new Date(),
+            motivoCambioEstado: "Conversión voluntaria a cuenta de cliente"
+        });
+
+        // 2. Buscar Rol CLIENTE
+        let rolCliente = await RolRepository.obtenerPorNombre("CLIENTE");
+        if (!rolCliente) {
+            rolCliente = await RolRepository.obtenerPorNombre("CLIENTES");
+        }
+        if (!rolCliente) {
+            const todosRoles = await RolRepository.obtenerTodos();
+            rolCliente = todosRoles.find(r => r.nombre && r.nombre.toUpperCase().includes("CLIENT"));
+        }
+        if (!rolCliente) {
+            throw new AppError("El rol CLIENTE no está configurado en el sistema.", 500);
+        }
+
+        // 3. Actualizar rol del usuario a CLIENTE
+        const usuarioActualizado = await UsuarioRepository.actualizar(conductorUsuarioId, {
+            rol: rolCliente._id
+        });
+
+        // 4. Crear o activar registro en la colección de clientes
+        let clienteExistente = await ClienteRepository.obtenerPorUsuario(conductorUsuarioId);
+        if (clienteExistente) {
+            await ClienteRepository.actualizar(clienteExistente._id, { estado: true });
+        } else {
+            await ClienteRepository.crear({
+                usuario: conductorUsuarioId,
+                direccion: "",
+                estado: true,
+                aceptaTerminos: usuarioActualizado.aceptaTerminos ?? true
+            });
+        }
+
+        // 5. Limpiar caché de autenticación del usuario
+        clearAuthUserCache(conductorUsuarioId);
+
+        // 6. Generar nuevo token con rol CLIENTE
+        const nuevoToken = jwt.sign(
+            {
+                id: usuarioActualizado._id,
+                nombre: usuarioActualizado.nombre,
+                apellido: usuarioActualizado.apellido,
+                correo: usuarioActualizado.correo,
+                rol: "CLIENTE",
+                esSuperAdmin: Boolean(usuarioActualizado.esSuperAdmin)
+            },
+            env.JWT_SECRET,
+            { expiresIn: env.JWT_EXPIRES_IN || "7d" }
+        );
+
+        return {
+            token: nuevoToken,
+            usuario: {
+                id: usuarioActualizado._id,
+                nombre: usuarioActualizado.nombre,
+                apellido: usuarioActualizado.apellido,
+                correo: usuarioActualizado.correo,
+                telefono: usuarioActualizado.telefono,
+                foto: usuarioActualizado.foto,
+                rol: "CLIENTE"
+            }
+        };
     }
 }
 

@@ -11,14 +11,23 @@ const categoriasLicenciaValidas = [
     "C3"
 ];
 
+const categoriaDetalleSchema = z.object({
+    categoria: z.string().trim().min(1, "La categoría es obligatoria."),
+    fechaExpedicion: z.coerce.date().optional().nullable(),
+    fechaVencimiento: z.coerce.date().optional().nullable()
+});
+
 const licenciaItemSchema = z.object({
     numero: z.string().trim().optional(),
     categoria: z.string().trim().optional(),
     categorias: z.array(z.string()).optional(),
+    categoriasDetalle: z.array(categoriaDetalleSchema).optional(),
     fechaExpedicion: z.coerce.date().optional().nullable(),
     fechaVencimiento: z.coerce.date().optional().nullable(),
     lugarExpedicion: z.string().trim().optional().nullable(),
-    fotoLicencia: z.string().trim().optional().nullable()
+    fotoLicencia: z.string().trim().optional().nullable(),
+    fotoLicenciaFrontal: z.string().trim().optional().nullable(),
+    fotoLicenciaTrasera: z.string().trim().optional().nullable()
 });
 
 const conductorBaseSchema = z.object({
@@ -94,6 +103,9 @@ const conductorBaseSchema = z.object({
         ])
         .optional(),
 
+    categoriasDetalle: z.array(categoriaDetalleSchema).optional(),
+    lugarExpedicion: z.string().trim().optional().nullable(),
+
     fechaExpedicion: z.coerce.date().optional().nullable(),
     fechaVencimiento: z.coerce.date().optional().nullable(),
 
@@ -113,6 +125,8 @@ const conductorBaseSchema = z.object({
     estado: z.boolean().optional(),
 
     fotoLicencia: z.string().optional().nullable(),
+    fotoLicenciaFrontal: z.string().optional().nullable(),
+    fotoLicenciaTrasera: z.string().optional().nullable(),
     fotoPerfil: z.string().optional().nullable()
 });
 
@@ -149,10 +163,14 @@ export const actualizarLicenciaSchema = z
         licencia: z.string().trim().min(3).max(30).optional(),
         categoriaLicencia: z.string().trim().optional(),
         categoriasLicencia: z.union([z.array(z.string()), z.string()]).optional(),
+        categoriasDetalle: z.array(categoriaDetalleSchema).optional(),
+        lugarExpedicion: z.string().trim().optional().nullable(),
         fechaExpedicion: z.coerce.date().optional(),
         fechaVencimiento: z.coerce.date().optional(),
         licencias: z.array(licenciaItemSchema).optional(),
-        fotoLicencia: z.string().optional().nullable()
+        fotoLicencia: z.string().optional().nullable(),
+        fotoLicenciaFrontal: z.string().optional().nullable(),
+        fotoLicenciaTrasera: z.string().optional().nullable()
     })
     .refine(
         (data) => {
