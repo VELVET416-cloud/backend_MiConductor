@@ -4,7 +4,7 @@ import VehiculoRepository from "./vehiculo.repository.js";
 import ClienteRepository from "../cliente/cliente.repository.js";
 import SolicitudRepository from "../solicitud/solicitud.repository.js";
 import AppError from "../../utils/AppError.js";
-import { validarDatosVehiculo } from "./vehiculo.validation.js";
+import { validarDatosVehiculo, normalizarPlaca, normalizarChasis, PLACA_REGEX } from "./vehiculo.validation.js";
 
 class VehiculoService {
 
@@ -15,9 +15,9 @@ class VehiculoService {
         // Normalizar
         datos.marca = datos.marca.trim();
         datos.modelo = datos.modelo.trim();
-        datos.placa = datos.placa.trim().toUpperCase();
+        datos.placa = normalizarPlaca(datos.placa);
         if (datos.numeroChasis && typeof datos.numeroChasis === "string" && datos.numeroChasis.trim() !== "") {
-            datos.numeroChasis = datos.numeroChasis.trim().toUpperCase();
+            datos.numeroChasis = normalizarChasis(datos.numeroChasis);
         } else {
             datos.numeroChasis = null;
         }
@@ -234,7 +234,7 @@ class VehiculoService {
 
         if (datos.placa) {
 
-            datos.placa = datos.placa.trim().toUpperCase();
+            datos.placa = normalizarPlaca(datos.placa);
 
             if (datos.placa !== vehiculo.placa) {
 
@@ -243,7 +243,7 @@ class VehiculoService {
                         datos.placa
                     );
 
-                if (placaExiste) {
+                if (placaExiste && placaExiste._id.toString() !== vehiculo._id.toString()) {
                     throw new AppError(
                         "Ya existe un vehículo con esa placa.",
                         409
@@ -256,7 +256,7 @@ class VehiculoService {
 
         if (datos.numeroChasis !== undefined) {
             if (datos.numeroChasis && typeof datos.numeroChasis === "string" && datos.numeroChasis.trim() !== "") {
-                datos.numeroChasis = datos.numeroChasis.trim().toUpperCase();
+                datos.numeroChasis = normalizarChasis(datos.numeroChasis);
 
                 if (datos.numeroChasis !== vehiculo.numeroChasis) {
                     const chasisExiste =
@@ -264,7 +264,7 @@ class VehiculoService {
                             datos.numeroChasis
                         );
 
-                    if (chasisExiste) {
+                    if (chasisExiste && chasisExiste._id.toString() !== vehiculo._id.toString()) {
                         throw new AppError(
                             "Ya existe un vehículo con ese número de chasis.",
                             409
@@ -317,16 +317,28 @@ class VehiculoService {
     }
 
     // Verificar disponibilidad de placa
-    async verificarPlaca(placa) {
+    // excluirId: id del vehículo en edición, para no reportarse a sí mismo como duplicado
+    async verificarPlaca(placa, excluirId = null) {
         if (!placa || typeof placa !== 'string') {
             throw new AppError("La placa es obligatoria.", 400);
         }
 
-        const placaLimpia = placa.trim().toUpperCase();
+        const placaLimpia = normalizarPlaca(placa);
+
+        if (!PLACA_REGEX.test(placaLimpia)) {
+            throw new AppError(
+                "La placa debe estar en mayúsculas y tener formato ABC123 (carro) o ABC12D (moto).",
+                400
+            );
+        }
+
+        if (excluirId && !mongoose.Types.ObjectId.isValid(excluirId)) {
+            throw new AppError("El id del vehículo a excluir no es válido.", 400);
+        }
 
         const vehiculo = await VehiculoRepository.obtenerPorPlaca(placaLimpia);
 
-        if (!vehiculo) {
+        if (!vehiculo || (excluirId && vehiculo._id.toString() === excluirId.toString())) {
             return {
                 existe: false,
                 permitido: true,
@@ -370,6 +382,38 @@ class VehiculoService {
                 marca: vehiculo.marca,
                 modelo: vehiculo.modelo,
                 estadoVehiculo
+            }
+        };
+    }
+
+    // Verificar disponibilidad de número de chasis (VIN)
+    async verificarChasis(chasis, excluirId = null) {
+        if (!chasis || typeof chasis !== 'string' || !chasis.trim()) {
+            throw new AppError("El número de chasis es obligatorio.", 400);
+        }
+
+        if (excluirId && !mongoose.Types.ObjectId.isValid(excluirId)) {
+            throw new AppError("El id del vehículo a excluir no es válido.", 400);
+        }
+
+        const chasisLimpio = normalizarChasis(chasis);
+        const vehiculo = await VehiculoRepository.obtenerPorChasis(chasisLimpio);
+
+        if (!vehiculo || (excluirId && vehiculo._id.toString() === excluirId.toString())) {
+            return {
+                existe: false,
+                disponible: true,
+                mensaje: "El número de chasis está disponible para registro."
+            };
+        }
+
+        return {
+            existe: true,
+            disponible: false,
+            mensaje: "Ya existe un vehículo registrado con ese número de chasis.",
+            vehiculo: {
+                _id: vehiculo._id,
+                placa: vehiculo.placa
             }
         };
     }

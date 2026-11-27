@@ -1,6 +1,15 @@
 import AppError from "../../utils/AppError.js";
 
-const PLACA_REGEX = /^(?:[A-Z]{3}[0-9]{3}|[A-Z]{3}[0-9]{2}[A-Z])$/;
+export const PLACA_REGEX = /^(?:[A-Z]{3}[0-9]{3}|[A-Z]{3}[0-9]{2}[A-Z])$/;
+
+// Quita espacios y guiones para que "abc-123" y "ABC 123" se traten como la misma placa
+export function normalizarPlaca(placa) {
+    return (placa ?? "").toString().replace(/[\s-]/g, "").toUpperCase();
+}
+
+export function normalizarChasis(chasis) {
+    return (chasis ?? "").toString().replace(/\s/g, "").toUpperCase();
+}
 
 function esFechaPosteriorAHoy(fechaValor) {
     if (!fechaValor) return false;
@@ -78,7 +87,7 @@ export function validarDatosVehiculo(datos, { esActualizacion = false, vehiculoA
     }
 
     // 3. Placa: obligatoria, mayúsculas, formato ABC123 (carro) o ABC12D (moto)
-    const placaRaw = (datos.placa ?? vehiculoActual?.placa ?? "").toString().trim().toUpperCase();
+    const placaRaw = normalizarPlaca(datos.placa ?? vehiculoActual?.placa);
     if (!placaRaw) {
         throw new AppError("La placa del vehículo es obligatoria.", 400);
     }

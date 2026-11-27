@@ -41,7 +41,7 @@ class UsuarioRepository {
     // Obtener usuario por correo
     async obtenerPorCorreo(correo) {
         return await Usuario.findOne({
-            correo
+            correo: (correo || "").toString().trim().toLowerCase()
         });
     }
 

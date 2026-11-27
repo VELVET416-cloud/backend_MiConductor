@@ -69,6 +69,12 @@ router.get(
     ClienteController.verificarDocumento
 );
 
+// Verificar existencia de correo electrónico
+router.get(
+    "/verificar-correo/:correo",
+    ClienteController.verificarCorreo
+);
+
 // Obtener cliente por ID de Usuario (usado desde app móvil)
 router.get(
     "/usuario/:usuarioId",
