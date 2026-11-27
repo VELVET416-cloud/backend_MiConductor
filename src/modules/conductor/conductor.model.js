@@ -1,5 +1,23 @@
 import mongoose from "mongoose";
 
+const categoriaDetalleSchema = new mongoose.Schema(
+    {
+        categoria: {
+            type: String,
+            required: true,
+            uppercase: true,
+            trim: true
+        },
+        fechaExpedicion: {
+            type: Date
+        },
+        fechaVencimiento: {
+            type: Date
+        }
+    },
+    { _id: false }
+);
+
 const licenciaItemSchema = new mongoose.Schema(
     {
         numero: {
@@ -16,6 +34,10 @@ const licenciaItemSchema = new mongoose.Schema(
             type: [String],
             default: []
         },
+        categoriasDetalle: {
+            type: [categoriaDetalleSchema],
+            default: []
+        },
         fechaExpedicion: {
             type: Date
         },
@@ -27,6 +49,14 @@ const licenciaItemSchema = new mongoose.Schema(
             trim: true
         },
         fotoLicencia: {
+            type: String,
+            default: null
+        },
+        fotoLicenciaFrontal: {
+            type: String,
+            default: null
+        },
+        fotoLicenciaTrasera: {
             type: String,
             default: null
         }
@@ -62,6 +92,18 @@ const conductorSchema = new mongoose.Schema(
         categoriasLicencia: {
             type: [String],
             default: []
+        },
+
+        // Detalle de cada categoría con su propia fecha de expedición y vencimiento
+        categoriasDetalle: {
+            type: [categoriaDetalleSchema],
+            default: []
+        },
+
+        lugarExpedicion: {
+            type: String,
+            default: "",
+            trim: true
         },
 
         fechaExpedicion: {
@@ -118,6 +160,16 @@ const conductorSchema = new mongoose.Schema(
 
         // Archivos y fotos
         fotoLicencia: {
+            type: String,
+            default: null
+        },
+
+        fotoLicenciaFrontal: {
+            type: String,
+            default: null
+        },
+
+        fotoLicenciaTrasera: {
             type: String,
             default: null
         },
