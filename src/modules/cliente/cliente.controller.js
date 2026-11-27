@@ -944,6 +944,22 @@ class ClienteController {
 </html>`;
     }
 
+
+    // Convertir cliente a conductor
+    async convertirAConductor(req, res, next) {
+        try {
+            const { id } = req.params;
+            const resultado = await ClienteService.convertirAConductor(id, req.user);
+
+            return successResponse(
+                res,
+                resultado,
+                "Cuenta convertida a conductor exitosamente."
+            );
+        } catch (error) {
+            next(error);
+        }
+    }
 }
 
 export default new ClienteController();

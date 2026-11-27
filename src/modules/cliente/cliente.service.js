@@ -1,3 +1,5 @@
+import ConductorRepository from "../conductor/conductor.repository.js";
+import { clearAuthUserCache } from "../../middlewares/auth.middleware.js";
 import EmailService from "../auth/email.service.js";
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
@@ -641,6 +643,100 @@ class ClienteService {
         };
     }
 
+
+    async convertirAConductor(clienteId, authUser) {
+        const cliente = await ClienteRepository.obtenerPorId(clienteId);
+        if (!cliente) {
+            throw new AppError("Cliente no encontrado.", 404);
+        }
+
+        const clienteUsuarioId = cliente.usuario?._id ? cliente.usuario._id.toString() : cliente.usuario?.toString();
+        const authUserId = authUser.id ? authUser.id.toString() : authUser._id?.toString();
+
+        if (clienteUsuarioId !== authUserId && !authUser.esSuperAdmin && authUser.rol !== "ADMINISTRADOR") {
+            throw new AppError("No tienes permiso para convertir esta cuenta.", 403);
+        }
+
+        // Validar si tiene servicios activos como cliente
+        try {
+            const Solicitud = mongoose.models.Solicitud || mongoose.model("Solicitud");
+            const solicitudActiva = await Solicitud.findOne({
+                cliente: cliente._id,
+                estado: { $in: ["PENDIENTE", "ACEPTADA", "EN_CAMINO", "LLEGADA_CONFIRMADA", "INICIADO", "EN_PROCESO"] }
+            });
+            if (solicitudActiva) {
+                throw new AppError("No puedes cambiar a conductor mientras tengas un viaje solicitado o en curso.", 400);
+            }
+        } catch (err) {
+            if (err instanceof AppError) throw err;
+        }
+
+        // 1. Validar que el usuario tenga un perfil de conductor registrado previamente
+        const conductorExistente = await ConductorRepository.obtenerPorUsuario(clienteUsuarioId);
+        if (!conductorExistente) {
+            throw new AppError("Solo los usuarios que ya son conductores pueden cambiar al modo conductor.", 403);
+        }
+
+        // 2. Desactivar cliente
+        await ClienteRepository.actualizar(cliente._id, { estado: false });
+
+        // 3. Buscar Rol CONDUCTOR
+        let rolConductor = await RolRepository.obtenerPorNombre("CONDUCTOR");
+        if (!rolConductor) {
+            rolConductor = await RolRepository.obtenerPorNombre("CONDUCTORES");
+        }
+        if (!rolConductor) {
+            const todosRoles = await RolRepository.obtenerTodos();
+            rolConductor = todosRoles.find(r => r.nombre && r.nombre.toUpperCase().includes("CONDUCT"));
+        }
+        if (!rolConductor) {
+            throw new AppError("El rol CONDUCTOR no está configurado en el sistema.", 500);
+        }
+
+        // 4. Actualizar rol del usuario a CONDUCTOR
+        const usuarioActualizado = await UsuarioRepository.actualizar(clienteUsuarioId, {
+            rol: rolConductor._id
+        });
+
+        // 5. Reactivar registro de conductor existente
+        await ConductorRepository.actualizar(conductorExistente._id, {
+            estado: true,
+            estadoConductor: "ACTIVO",
+            disponible: false,
+            fechaCambioEstado: new Date(),
+            motivoCambioEstado: "Reactivación voluntaria a cuenta de conductor"
+        });
+
+        // 5. Limpiar caché de autenticación del usuario
+        clearAuthUserCache(clienteUsuarioId);
+
+        // 6. Generar nuevo token con rol CONDUCTOR
+        const nuevoToken = jwt.sign(
+            {
+                id: usuarioActualizado._id,
+                nombre: usuarioActualizado.nombre,
+                apellido: usuarioActualizado.apellido,
+                correo: usuarioActualizado.correo,
+                rol: "CONDUCTOR",
+                esSuperAdmin: Boolean(usuarioActualizado.esSuperAdmin)
+            },
+            env.JWT_SECRET,
+            { expiresIn: env.JWT_EXPIRES_IN || "7d" }
+        );
+
+        return {
+            token: nuevoToken,
+            usuario: {
+                id: usuarioActualizado._id,
+                nombre: usuarioActualizado.nombre,
+                apellido: usuarioActualizado.apellido,
+                correo: usuarioActualizado.correo,
+                telefono: usuarioActualizado.telefono,
+                foto: usuarioActualizado.foto,
+                rol: "CONDUCTOR"
+            }
+        };
+    }
 }
 
 export default new ClienteService();
