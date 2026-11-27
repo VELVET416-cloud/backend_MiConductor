@@ -25,7 +25,7 @@ class ClienteService {
 
     async crear(datos, { autoRegistro = false } = {}) {
         validarDatosCliente(datos, { esActualizacion: false });
-        datos.direccion = datos.direccion.trim();
+        datos.direccion = (datos.direccion || "").toString().trim();
 
         if (autoRegistro) {
             if (datos.aceptaTerminos !== true) {
@@ -511,7 +511,7 @@ class ClienteService {
             to: correo,
             subject: "Activa tu cuenta en Mi Conductor y establece tu contraseña",
             html: `
-                <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: auto; padding: 32px; border: 1px solid #e2e8f0; border-radius: 16px; background: #ffffff;">
+                <div style="font-family: Arial, Helvetica, sans-serif; max-width: 600px; margin: auto; padding: 32px; border: 1px solid #e2e8f0; border-radius: 16px; background: #ffffff;">
                     <div style="margin-bottom: 24px;">
                         <span style="font-size: 12px; font-weight: 700; color: #FB9833; text-transform: uppercase; letter-spacing: 0.1em;">
                             MI CONDUCTOR

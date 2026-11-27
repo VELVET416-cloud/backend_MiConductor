@@ -207,7 +207,7 @@ class EmailService {
                 to: correo,
                 subject: `Bienvenido a Mi Conductor - Tus credenciales de acceso (${rol})`,
                 html: `
-                    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: auto; padding: 32px; border: 1px solid #e2e8f0; border-radius: 16px; background: #ffffff;">
+                    <div style="font-family: Arial, Helvetica, sans-serif; max-width: 600px; margin: auto; padding: 32px; border: 1px solid #e2e8f0; border-radius: 16px; background: #ffffff;">
                         <div style="margin-bottom: 24px;">
                             <span style="font-size: 12px; font-weight: 700; color: #FB9833; text-transform: uppercase; letter-spacing: 0.1em;">
                                 MI CONDUCTOR
@@ -234,7 +234,7 @@ class EmailService {
                             <p style="margin: 0; font-size: 14px; color: #475569;">
                                 <strong style="color: #1e293b;">Contraseña asignada:</strong>
                                 <br />
-                                <span style="display: inline-block; margin-top: 4px; background: #fef3c7; border: 1px solid #fde68a; padding: 6px 14px; border-radius: 8px; font-size: 17px; font-weight: 700; color: #92400e; font-family: monospace; letter-spacing: 0.05em;">${password}</span>
+                                <span style="display: inline-block; margin-top: 4px; background: #fef3c7; border: 1px solid #fde68a; padding: 6px 14px; border-radius: 8px; font-size: 17px; font-weight: 700; color: #92400e; font-family: Arial, Helvetica, sans-serif; letter-spacing: 0.05em;">${password}</span>
                             </p>
                         </div>
 
@@ -323,7 +323,7 @@ class EmailService {
                 to: correo,
                 subject: "Activa tu cuenta en Mi Conductor y establece tu contraseña",
                 html: `
-                    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: auto; padding: 32px; border: 1px solid #e2e8f0; border-radius: 16px; background: #ffffff;">
+                    <div style="font-family: Arial, Helvetica, sans-serif; max-width: 600px; margin: auto; padding: 32px; border: 1px solid #e2e8f0; border-radius: 16px; background: #ffffff;">
                         <div style="margin-bottom: 24px;">
                             <span style="font-size: 12px; font-weight: 700; color: #FB9833; text-transform: uppercase; letter-spacing: 0.1em;">
                                 MI CONDUCTOR
