@@ -13,7 +13,7 @@ const clienteSchema = new mongoose.Schema(
 
         direccion: {
             type: String,
-            required: [true, "La dirección es obligatoria."],
+            default: "",
             trim: true
         },
 

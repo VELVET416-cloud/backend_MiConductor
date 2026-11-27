@@ -18,9 +18,11 @@ app.get("/", (req, res) => {
   });
 });
 
+// Configuración de orígenes permitidos
 const allowedOrigins = [
   env.CLIENT_URL,
   env.MOBILE_CLIENT_URL,
+  ...(env.CLIENT_URL || "").split(",").map((o) => o.trim().replace(/\/+$/, "")),
 ].filter(Boolean);
 
 app.use(
@@ -30,6 +32,8 @@ app.use(
       if (!origin) {
         return callback(null, true);
       }
+
+      const normalizedOrigin = origin.replace(/\/+$/, "");
 
       // Permitir localhost y 127.0.0.1 en cualquier puerto
       const esLocalhost =
@@ -43,6 +47,7 @@ app.use(
         /^https?:\/\/(192\.168\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|10\.)/.test(origin);
 
       if (
+        allowedOrigins.includes(normalizedOrigin) ||
         allowedOrigins.includes(origin) ||
         esLocalhost ||
         esRedLocal ||
@@ -57,7 +62,7 @@ app.use(
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "Accept", "X-Requested-With"]
+    allowedHeaders: ["Content-Type", "Authorization", "Accept", "X-Requested-With"],
   })
 );
 

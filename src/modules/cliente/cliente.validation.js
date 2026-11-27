@@ -61,7 +61,7 @@ export function calcularEdadDesdeFecha(fechaNacimiento) {
 export function validarDireccionColombiana(direccion) {
     const trimmed = (direccion ?? "").toString().trim();
     if (!trimmed) {
-        return "La dirección es obligatoria.";
+        return "";
     }
     if (trimmed.length < 5) {
         return "La dirección debe tener mínimo 5 caracteres.";
@@ -187,13 +187,18 @@ export function validarDatosCliente(datos, { esActualizacion = false } = {}) {
         datos.telefono = tel;
     }
 
-    // 7. Dirección: obligatoria, formato dirección colombiana
-    if (!esActualizacion || datos.direccion !== undefined) {
-        const dirError = validarDireccionColombiana(datos.direccion);
-        if (dirError) {
-            throw new AppError(dirError, 400);
+    // 7. Dirección: opcional, si se ingresa se valida formato dirección colombiana
+    if (datos.direccion !== undefined && datos.direccion !== null) {
+        const trimmedDir = datos.direccion.toString().trim();
+        if (trimmedDir) {
+            const dirError = validarDireccionColombiana(trimmedDir);
+            if (dirError) {
+                throw new AppError(dirError, 400);
+            }
         }
-        datos.direccion = datos.direccion.trim();
+        datos.direccion = trimmedDir;
+    } else if (!esActualizacion) {
+        datos.direccion = "";
     }
 }
 
