@@ -150,7 +150,25 @@ class ClienteController {
     async verificarDocumento(req, res, next) {
         try {
             const { documento } = req.params;
-            const resultado = await ClienteService.verificarDocumento(documento);
+            const resultado = await ClienteService.verificarDocumento(documento, req.query.excluirId || null);
+
+            return successResponse(
+                res,
+                resultado,
+                resultado.mensaje
+            );
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    /**
+     * Verifica si un correo ya está registrado (opcionalmente excluyendo un usuario).
+     */
+    async verificarCorreo(req, res, next) {
+        try {
+            const { correo } = req.params;
+            const resultado = await ClienteService.verificarCorreo(correo, req.query.excluirId || null);
 
             return successResponse(
                 res,
@@ -326,7 +344,7 @@ class ClienteController {
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      font-family: Arial, Helvetica, sans-serif;
       min-height: 100vh;
       display: flex;
       align-items: center;

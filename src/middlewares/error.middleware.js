@@ -21,7 +21,11 @@ const errorMiddleware = (error, req, res, next) => {
     if (error.code === 11000) {
         const campos = error.keyPattern ? Object.keys(error.keyPattern) : [];
         let mensaje = "Ya existe un registro con estos datos.";
-        if (campos.includes("correo") || (error.message && error.message.includes("correo"))) {
+        if (campos.includes("placa")) {
+            mensaje = "Ya existe un vehículo con esa placa.";
+        } else if (campos.includes("numeroChasis")) {
+            mensaje = "Ya existe un vehículo con ese número de chasis.";
+        } else if (campos.includes("correo") || (error.message && error.message.includes("correo"))) {
             mensaje = "Ya existe un usuario con ese correo.";
         } else if (
             campos.includes("documento") ||

@@ -73,6 +73,7 @@ class AuthService {
                 apellido: usuario.apellido,
                 correo: usuario.correo,
                 rol: rolNombre,
+                esSuperAdmin: Boolean(usuario.esSuperAdmin || rolNombre === "SUPERADMINISTRADOR"),
                 permisos: codigosPermisos
             },
             env.JWT_SECRET,
@@ -87,6 +88,7 @@ class AuthService {
                 apellido: usuario.apellido,
                 correo: usuario.correo,
                 rol: rolNombre,
+                esSuperAdmin: Boolean(usuario.esSuperAdmin || rolNombre === "SUPERADMINISTRADOR"),
                 permisos: codigosPermisos
             }
         };
@@ -114,6 +116,11 @@ class AuthService {
             nombre: usuario.nombre,
             apellido: usuario.apellido,
             correo: usuario.correo,
+            fechaNacimiento: usuario.fechaNacimiento || null,
+            edad: usuario.edad ?? null,
+            aceptaTerminos: Boolean(usuario.aceptaTerminos),
+            fechaAceptacionTerminos: usuario.fechaAceptacionTerminos || null,
+            esSuperAdmin: Boolean(usuario.esSuperAdmin || rolNombre === "SUPERADMINISTRADOR"),
             rol: rolNombre,
             rolId: usuario.rol?._id || null,
             permisos: codigosPermisos
@@ -174,6 +181,10 @@ class AuthService {
                 nombre: usuario.nombre,
                 apellido: usuario.apellido,
                 correo: usuario.correo,
+                fechaNacimiento: usuario.fechaNacimiento || null,
+                edad: usuario.edad ?? null,
+                aceptaTerminos: Boolean(usuario.aceptaTerminos),
+                fechaAceptacionTerminos: usuario.fechaAceptacionTerminos || null,
                 rol
             }
         };
@@ -342,7 +353,7 @@ class AuthService {
     async changePassword(authUser, datos) {
         this.verificarPropiedadCuenta(authUser, datos);
 
-        const rolesPermitidos = ["CLIENTE", "CONDUCTOR", "ADMINISTRADOR"];
+        const rolesPermitidos = ["CLIENTE", "CONDUCTOR", "ADMINISTRADOR", "SUPERADMINISTRADOR"];
         if (!authUser.rol || !rolesPermitidos.includes(authUser.rol)) {
             throw new AppError(
                 "No tiene permisos para realizar esta acción.",

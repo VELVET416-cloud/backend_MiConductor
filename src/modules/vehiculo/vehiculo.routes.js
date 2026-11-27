@@ -51,6 +51,12 @@ router.get(
     VehiculoController.verificarPlaca
 );
 
+// Verificar disponibilidad de número de chasis
+router.get(
+    "/verificar-chasis/:chasis",
+    VehiculoController.verificarChasis
+);
+
 // Obtener vehiculos de un cliente
 router.get(
     "/cliente/:clienteId",

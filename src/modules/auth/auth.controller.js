@@ -74,7 +74,7 @@ class AuthController {
 
     async register(req, res, next) {
         try {
-            const cliente = await ClienteService.crear(req.body);
+            const cliente = await ClienteService.crear(req.body, { autoRegistro: true });
             return successResponse(
                 res,
                 cliente,

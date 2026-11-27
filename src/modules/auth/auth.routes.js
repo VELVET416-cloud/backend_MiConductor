@@ -8,7 +8,7 @@ import {
     resetPasswordSchema,
     changePasswordSchema
 } from "./auth.validation.js";
-import { crearClienteSchema } from "../cliente/cliente.schema.js";
+import { registrarClienteSchema } from "../cliente/cliente.schema.js";
 
 const router = Router();
 
@@ -62,7 +62,7 @@ router.get(
 
 router.post(
     "/register",
-    validateSchema(crearClienteSchema),
+    validateSchema(registrarClienteSchema),
     AuthController.register
 );
 

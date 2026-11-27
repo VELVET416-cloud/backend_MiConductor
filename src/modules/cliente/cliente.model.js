@@ -13,7 +13,7 @@ const clienteSchema = new mongoose.Schema(
 
         direccion: {
             type: String,
-            required: [true, "La dirección es obligatoria."],
+            default: "",
             trim: true
         },
 
@@ -30,6 +30,16 @@ const clienteSchema = new mongoose.Schema(
 
         edad: {
             type: Number,
+            default: null,
+        },
+
+        aceptaTerminos: {
+            type: Boolean,
+            default: false,
+        },
+
+        fechaAceptacionTerminos: {
+            type: Date,
             default: null,
         },
         

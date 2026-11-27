@@ -87,4 +87,11 @@ router.delete(
     ConductorController.eliminar
 );
 
+
+router.post(
+    "/:id/convertir-a-cliente",
+    authMiddleware,
+    ConductorController.convertirACliente
+);
+
 export default router;
